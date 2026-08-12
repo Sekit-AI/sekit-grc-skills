@@ -1,0 +1,25 @@
+{
+  "name": "@sekit-ai/sekit-grc-skills",
+  "version": "0.4.0",
+  "description": "Open-source GRC skills for consultants using Sekit, packaged as a Claude plugin.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-plugins.mjs",
+    "package": "npm run build",
+    "test": "npm run build && node --test --test-reporter=spec scripts/__tests__/*.test.mjs",
+    "verify-release": "node scripts/verify-release-version.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sekit-AI/sekit-grc-skills.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Sekit-AI/sekit-grc-skills/issues"
+  },
+  "homepage": "https://github.com/Sekit-AI/sekit-grc-skills#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "Apache-2.0"
+}

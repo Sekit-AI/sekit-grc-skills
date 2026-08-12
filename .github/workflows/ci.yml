@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Validate and package plugins
+        run: npm test
+
+      - name: Verify aligned manifest versions
+        run: npm run verify-release
+
+      - name: Upload manual Claude plugin artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: sekit-grc-plugin
+          path: dist/sekit-grc.plugin
+          if-no-files-found: error
