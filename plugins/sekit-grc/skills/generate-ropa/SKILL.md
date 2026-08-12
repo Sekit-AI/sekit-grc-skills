@@ -101,7 +101,10 @@ Drafting rules:
    30.2 CE too when a processor record exists. **Precondition:** the CE must already exist —
    if the client has no GDPR gap analysis / 30.1 evaluation yet, create it first (see
    evaluate-controls) or link to a matching Risk instead; the artifact can also stand alone
-   unlinked. The GDPR gap analysis now shows the ROPA as evidence instead of an open gap.
+   unlinked. Attaching evidence does not change a control verdict. Review the ROPA with the
+   consultant and call `update_control_evaluation` only after they confirm the new verdict and
+   rationale; until then, continue to report the evaluation's current status, including an open
+   gap.
 4. Approval (`approve_artifact`) is a governance action: **only on explicit user instruction**,
    owner-only. It stamps `effective_date` and `next_review_date` (+6 months) — that stamp IS
    the review cadence; the ROPA is a living record, not a one-off.

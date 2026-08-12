@@ -30,7 +30,8 @@ jobs:
         run: npm run verify-release -- "$GITHUB_REF_NAME"
 
       - name: Create checksum
-        run: sha256sum dist/sekit-grc.plugin > dist/sekit-grc.plugin.sha256
+        working-directory: dist
+        run: sha256sum sekit-grc.plugin > sekit-grc.plugin.sha256
 
       - name: Publish GitHub release
         env:

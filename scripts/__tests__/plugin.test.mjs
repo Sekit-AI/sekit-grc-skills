@@ -118,3 +118,13 @@ test('the built Claude artifact is a valid, source-exact plugin archive', () => 
     assert.deepEqual(packaged, source, `${entry} differs between source and artifact`);
   }
 });
+
+test('release and security metadata work in their standard consumer flows', () => {
+  const releaseWorkflow = readFileSync(resolve(root, '.github/workflows/release.yml'), 'utf8');
+  const issueConfig = readFileSync(resolve(root, '.github/ISSUE_TEMPLATE/config.yml'), 'utf8');
+
+  assert.match(releaseWorkflow, /working-directory: dist\n\s+run: sha256sum sekit-grc\.plugin > sekit-grc\.plugin\.sha256/);
+  assert.doesNotMatch(releaseWorkflow, /sha256sum dist\/sekit-grc\.plugin/);
+  assert.match(issueConfig, /url: https:\/\//);
+  assert.doesNotMatch(issueConfig, /url: mailto:/);
+});
