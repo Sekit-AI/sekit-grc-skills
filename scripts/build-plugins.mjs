@@ -1,5 +1,5 @@
 import { mkdirSync, existsSync, readdirSync, statSync, rmSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 // Package each plugin under plugins/ as a `.plugin` archive whose ROOT is the
@@ -29,6 +29,7 @@ const plugins = readdirSync(pluginsDir).filter((n) =>
 );
 
 const built = [];
+const builtSkills = [];
 for (const name of plugins) {
   const pluginDir = join(pluginsDir, name);
   const outPath = join(dist, `${name}.plugin`);
@@ -52,6 +53,46 @@ for (const name of plugins) {
     stdio: 'inherit',
   });
   built.push(outPath);
+
+  // ChatGPT's direct skill uploader accepts one skill per `.skill` (ZIP) file.
+  // Put SKILL.md and optional skill resources at the archive root, without the
+  // wrapping skill-name directory. The separate bundle ZIP is only a convenient
+  // way to download every `.skill` file together; users unzip it before upload.
+  const sourceSkills = join(pluginDir, 'skills');
+  if (existsSync(sourceSkills)) {
+    const skillDist = join(dist, 'skills');
+    mkdirSync(skillDist, { recursive: true });
+    const skillArchives = [];
+    const skillNames = readdirSync(sourceSkills).filter((skillName) =>
+      statSync(join(sourceSkills, skillName)).isDirectory(),
+    );
+
+    for (const skillName of skillNames) {
+      const skillDir = join(sourceSkills, skillName);
+      const entries = ['SKILL.md', 'agents', 'references', 'scripts', 'assets'].filter((entry) =>
+        existsSync(join(skillDir, entry)),
+      );
+      if (!entries.includes('SKILL.md')) {
+        console.error(`Cannot package ${skillName}: no SKILL.md`);
+        process.exit(1);
+      }
+
+      const skillPath = join(skillDist, `${skillName}.skill`);
+      execFileSync('zip', ['-r', '-X', '-q', skillPath, ...entries], {
+        cwd: skillDir,
+        stdio: 'inherit',
+      });
+      skillArchives.push(skillPath);
+      builtSkills.push(skillPath);
+    }
+
+    const bundlePath = join(dist, `${name}-skills.zip`);
+    execFileSync('zip', ['-X', '-q', bundlePath, ...skillArchives.map((path) => basename(path))], {
+      cwd: skillDist,
+      stdio: 'inherit',
+    });
+    built.push(bundlePath);
+  }
 }
 
 if (built.length === 0) {
@@ -59,4 +100,4 @@ if (built.length === 0) {
   process.exit(1);
 }
 
-console.log('Plugin bundles written:\n  ' + built.join('\n  '));
+console.log('Release artifacts written:\n  ' + [...built, ...builtSkills].join('\n  '));

@@ -1,0 +1,11 @@
+interface:
+  display_name: "Analyze Sekit Risks"
+  short_description: "Build and maintain a client's risk register"
+  default_prompt: "Use $analyze-risks to review and update a Sekit client's risk register."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "sekit-consultant"
+      description: "Sekit consultant MCP"
+      transport: "streamable_http"
+      url: "https://sekit.ai/api/mcp/consultant"

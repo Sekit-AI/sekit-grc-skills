@@ -1,0 +1,11 @@
+interface:
+  display_name: "Run Sekit Gap Analysis"
+  short_description: "Run a framework-scoped gap analysis"
+  default_prompt: "Use $run-gap-analysis to assess a Sekit client against the right framework."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "sekit-consultant"
+      description: "Sekit consultant MCP"
+      transport: "streamable_http"
+      url: "https://sekit.ai/api/mcp/consultant"

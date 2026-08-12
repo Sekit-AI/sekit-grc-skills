@@ -1,0 +1,11 @@
+interface:
+  display_name: "Evaluate Sekit Controls"
+  short_description: "Record evidence-based control evaluations"
+  default_prompt: "Use $evaluate-controls to assess controls for a Sekit client using available evidence."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "sekit-consultant"
+      description: "Sekit consultant MCP"
+      transport: "streamable_http"
+      url: "https://sekit.ai/api/mcp/consultant"

@@ -1,0 +1,11 @@
+interface:
+  display_name: "Sekit Onboarding"
+  short_description: "Discover Sekit and complete a safe first task"
+  default_prompt: "Use $sekit-onboarding to explain what Sekit can do and guide my first safe task."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "sekit-consultant"
+      description: "Sekit consultant MCP"
+      transport: "streamable_http"
+      url: "https://sekit.ai/api/mcp/consultant"

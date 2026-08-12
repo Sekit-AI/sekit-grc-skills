@@ -10,6 +10,8 @@ const root = resolve(here, '../..');
 const pluginRoot = resolve(root, 'plugins/sekit-grc');
 const skillsRoot = resolve(pluginRoot, 'skills');
 const artifact = resolve(root, 'dist/sekit-grc.plugin');
+const skillDist = resolve(root, 'dist/skills');
+const skillBundle = resolve(root, 'dist/sekit-grc-skills.zip');
 
 function json(path) {
   return JSON.parse(readFileSync(resolve(root, path), 'utf8'));
@@ -25,8 +27,8 @@ function filesBelow(path) {
   return files;
 }
 
-function zipEntries() {
-  return execFileSync('unzip', ['-Z1', artifact], { encoding: 'utf8' })
+function zipEntries(path = artifact) {
+  return execFileSync('unzip', ['-Z1', path], { encoding: 'utf8' })
     .split('\n')
     .filter(Boolean);
 }
@@ -121,6 +123,13 @@ test('every skill has portable, valid frontmatter', () => {
     assert.ok(source.slice(frontmatter[0].length).trim().length > 0);
 
     assert.doesNotMatch(source, /\b(?:Rails|ActionPolicy|PaperTrail|FastMCP)\b/);
+    assert.doesNotMatch(source, /\brelated_frameworks\b/);
+
+    const openai = readFileSync(resolve(skillsRoot, skillName, 'agents/openai.yaml'), 'utf8');
+    assert.match(openai, new RegExp(`default_prompt: "Use \\$${skillName}\\b`));
+    assert.match(openai, /value: "sekit-consultant"/);
+    assert.match(openai, /transport: "streamable_http"/);
+    assert.match(openai, /url: "https:\/\/sekit\.ai\/api\/mcp\/consultant"/);
   }
 });
 
@@ -149,11 +158,51 @@ test('the built Claude artifact is a valid, source-exact plugin archive', () => 
   }
 });
 
+test('ChatGPT direct-upload skill archives are valid and source-exact', () => {
+  const skillNames = readdirSync(skillsRoot)
+    .filter((entry) => statSync(resolve(skillsRoot, entry)).isDirectory())
+    .sort();
+  const archives = readdirSync(skillDist).filter((entry) => entry.endsWith('.skill')).sort();
+
+  assert.deepEqual(archives, skillNames.map((name) => `${name}.skill`));
+
+  for (const skillName of skillNames) {
+    const skillRoot = resolve(skillsRoot, skillName);
+    const skillArtifact = resolve(skillDist, `${skillName}.skill`);
+    assert.doesNotThrow(() => execFileSync('unzip', ['-tq', skillArtifact], { stdio: 'pipe' }));
+
+    const entries = zipEntries(skillArtifact);
+    assert.ok(entries.includes('SKILL.md'), `${skillName} must put SKILL.md at archive root`);
+    assert.ok(!entries.some((entry) => entry.startsWith(`${skillName}/`)));
+
+    const packagedFiles = entries.filter((entry) => !entry.endsWith('/')).sort();
+    const expectedFiles = filesBelow(skillRoot).map((path) => relative(skillRoot, path)).sort();
+    assert.deepEqual(packagedFiles, expectedFiles);
+
+    for (const entry of expectedFiles) {
+      const packaged = execFileSync('unzip', ['-p', skillArtifact, entry]);
+      const source = readFileSync(resolve(skillRoot, entry));
+      assert.deepEqual(packaged, source, `${skillName}/${entry} differs from source`);
+    }
+  }
+
+  assert.doesNotThrow(() => execFileSync('unzip', ['-tq', skillBundle], { stdio: 'pipe' }));
+  assert.deepEqual(zipEntries(skillBundle).sort(), archives);
+  for (const archive of archives) {
+    const bundled = execFileSync('unzip', ['-p', skillBundle, archive]);
+    const standalone = readFileSync(resolve(skillDist, archive));
+    assert.deepEqual(bundled, standalone, `${archive} differs inside the convenience bundle`);
+  }
+});
+
 test('release and security metadata work in their standard consumer flows', () => {
   const releaseWorkflow = readFileSync(resolve(root, '.github/workflows/release.yml'), 'utf8');
   const issueConfig = readFileSync(resolve(root, '.github/ISSUE_TEMPLATE/config.yml'), 'utf8');
 
-  assert.match(releaseWorkflow, /working-directory: dist\n\s+run: sha256sum sekit-grc\.plugin > sekit-grc\.plugin\.sha256/);
+  assert.match(releaseWorkflow, /sha256sum sekit-grc\.plugin sekit-grc-skills\.zip > SHA256SUMS/);
+  assert.match(releaseWorkflow, /\(cd skills && sha256sum \*\.skill\) >> SHA256SUMS/);
+  assert.match(releaseWorkflow, /dist\/skills\/\*\.skill/);
+  assert.match(releaseWorkflow, /dist\/sekit-grc-skills\.zip/);
   assert.doesNotMatch(releaseWorkflow, /sha256sum dist\/sekit-grc\.plugin/);
   assert.match(issueConfig, /url: https:\/\//);
   assert.doesNotMatch(issueConfig, /url: mailto:/);

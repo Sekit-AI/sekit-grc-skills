@@ -1,0 +1,11 @@
+interface:
+  display_name: "Sekit MCP Guide"
+  short_description: "Connect and operate the Sekit consultant MCP"
+  default_prompt: "Use $sekit-mcp-guide to connect Sekit and follow its shared operating rules."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "sekit-consultant"
+      description: "Sekit consultant MCP"
+      transport: "streamable_http"
+      url: "https://sekit.ai/api/mcp/consultant"

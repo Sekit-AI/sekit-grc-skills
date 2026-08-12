@@ -1,0 +1,11 @@
+interface:
+  display_name: "Generate Sekit ROPA"
+  short_description: "Draft a governed GDPR Article 30 ROPA"
+  default_prompt: "Use $generate-ropa to prepare a GDPR Article 30 ROPA for a Sekit client."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "sekit-consultant"
+      description: "Sekit consultant MCP"
+      transport: "streamable_http"
+      url: "https://sekit.ai/api/mcp/consultant"

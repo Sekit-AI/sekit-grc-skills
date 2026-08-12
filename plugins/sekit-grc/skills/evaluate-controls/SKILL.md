@@ -73,10 +73,6 @@ than implying a real assessment produced it.
 `RC`), `gdpr_articles`, `last_reviewed_at`, `assessment_id` (must belong
 to the same client).
 
-`related_frameworks` is NOT writable: the platform derives it from the control crosswalk
-whenever an evaluation is read. The write tools do not accept it — sending it changes
-nothing, so never report it as saved.
-
 ## Process
 
 1. **Orient** — `whoami` → `list_clients` → resolve `client_organization_id`.

@@ -1,0 +1,11 @@
+interface:
+  display_name: "Manage Sekit Evidence"
+  short_description: "Collect evidence and govern deliverables"
+  default_prompt: "Use $manage-evidence-and-deliverables to collect evidence or manage a Sekit deliverable."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "sekit-consultant"
+      description: "Sekit consultant MCP"
+      transport: "streamable_http"
+      url: "https://sekit.ai/api/mcp/consultant"
