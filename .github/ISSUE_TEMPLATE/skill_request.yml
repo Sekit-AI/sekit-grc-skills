@@ -1,0 +1,38 @@
+name: Skill or workflow request
+description: Propose a new consultant outcome or an improvement to an existing skill
+title: "[Skill]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: job
+    attributes:
+      label: Consultant job to be done
+      description: What is the consultant trying to accomplish, and for whom?
+    validations:
+      required: true
+  - type: textarea
+    id: trigger
+    attributes:
+      label: Example requests
+      description: Give two or three realistic prompts that should trigger the workflow.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Expected outcome
+      description: What should the consultant receive or have completed?
+    validations:
+      required: true
+  - type: textarea
+    id: tools
+    attributes:
+      label: Relevant Sekit tools
+      description: List known connector tools, or say that you are unsure.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: This request contains no credentials, client data, or private assessment material.
+          required: true

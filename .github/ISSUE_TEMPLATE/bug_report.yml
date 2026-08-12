@@ -1,0 +1,53 @@
+name: Bug report
+description: Report incorrect or unsafe skill behavior
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include tokens, client data, or security vulnerabilities. Use SECURITY.md for sensitive reports.
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version
+      placeholder: 0.4.0
+    validations:
+      required: true
+  - type: dropdown
+    id: host
+    attributes:
+      label: Host
+      options:
+        - Claude
+        - ChatGPT
+        - Codex
+        - Other MCP host
+    validations:
+      required: true
+  - type: input
+    id: skill
+    attributes:
+      label: Skill
+      placeholder: sekit-onboarding
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Use synthetic or fully redacted examples.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed all credentials, client data, and private assessment material.
+          required: true

@@ -1,0 +1,31 @@
+{
+  "name": "sekit-grc",
+  "version": "0.4.0",
+  "description": "Open-source Sekit consultant skills for guided GRC work over the Sekit consultant MCP.",
+  "author": {
+    "name": "Sekit AI",
+    "email": "ricardo@sekit.ai",
+    "url": "https://sekit.ai"
+  },
+  "homepage": "https://github.com/Sekit-AI/sekit-grc-skills",
+  "repository": "https://github.com/Sekit-AI/sekit-grc-skills",
+  "license": "Apache-2.0",
+  "keywords": ["cybersecurity", "grc", "compliance", "risk", "sekit"],
+  "skills": "./skills/",
+  "apps": "./.app.json",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Sekit GRC",
+    "shortDescription": "Guided GRC workflows for Sekit consultants",
+    "longDescription": "Understand Sekit and carry out framework-agnostic risk, control, gap-analysis, asset, evidence, knowledge, and deliverable workflows through the bundled Sekit consultant connection.",
+    "developerName": "Sekit AI",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://sekit.ai",
+    "defaultPrompt": [
+      "Use Sekit onboarding to show me what I can do and help me choose a first task.",
+      "Use Sekit GRC to summarize the current risks and open evidence requests for a client."
+    ],
+    "brandColor": "#7C3AED"
+  }
+}

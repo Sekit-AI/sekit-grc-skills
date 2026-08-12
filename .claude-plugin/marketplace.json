@@ -1,0 +1,16 @@
+{
+  "name": "sekit-grc-skills",
+  "owner": {
+    "name": "Ricardo Rodríguez",
+    "email": "ricardo@sekit.ai"
+  },
+  "description": "Open-source Sekit consultant skills for onboarding, risk, controls, gap analysis, evidence, assets, knowledge, and governed deliverables over the consultant MCP.",
+  "plugins": [
+    {
+      "name": "sekit-grc",
+      "source": "./plugins/sekit-grc",
+      "description": "Understand Sekit and do consultant GRC work over its authenticated MCP: onboard, analyze risks, evaluate controls, run gap analyses, manage knowledge and assets, collect evidence, and govern deliverables.",
+      "category": "productivity"
+    }
+  ]
+}
