@@ -123,6 +123,7 @@ test('every skill has portable, valid frontmatter', () => {
     assert.ok(source.slice(frontmatter[0].length).trim().length > 0);
 
     assert.doesNotMatch(source, /\b(?:Rails|ActionPolicy|PaperTrail|FastMCP)\b/);
+    assert.doesNotMatch(source, /\brelated_frameworks\b/);
 
     const openai = readFileSync(resolve(skillsRoot, skillName, 'agents/openai.yaml'), 'utf8');
     assert.match(openai, new RegExp(`default_prompt: "Use \\$${skillName}\\b`));
