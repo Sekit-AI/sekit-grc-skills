@@ -67,12 +67,13 @@ codex plugin marketplace add Sekit-AI/sekit-grc-skills
 ```
 
 Restart the ChatGPT desktop app, open the Plugins Directory, choose **Sekit GRC Skills**, and
-install **Sekit GRC**. ChatGPT uses `@` to select a skill; Codex uses `$`.
+install **Sekit GRC**. Authorize the bundled Sekit connection when prompted. ChatGPT uses `@` to
+select a skill; Codex uses `$`.
 
 This repo-marketplace path is suitable for local testing and direct distribution. Submission to
 the universal public Plugins Directory shared by ChatGPT and Codex is a separate OpenAI review
-step. Until Sekit's MCP has a registered ChatGPT connection ID, connect the remote MCP separately
-as described below; the skills-only plugin remains installable and usable for guidance.
+step. The OpenAI plugin maps ChatGPT to Sekit's registered app and gives Codex the remote MCP
+configuration; both still require each user to authorize their own Sekit account.
 
 ## Connect Sekit
 
@@ -82,8 +83,10 @@ The plugin uses Sekit's remote consultant MCP at:
 URL: https://sekit.ai/api/mcp/consultant
 ```
 
-- **ChatGPT and OAuth-capable hosts:** add the URL as a custom MCP connector and complete the
-  Sekit browser sign-in and consent flow.
+- **ChatGPT and Codex:** install the plugin and complete the Sekit browser sign-in and consent
+  flow when prompted; the connector is bundled.
+- **Other OAuth-capable hosts:** add the URL as a custom MCP connector and complete the Sekit
+  browser sign-in and consent flow.
 - **Claude or hosts that support custom authorization headers:** create a Personal Access Token
   under **Settings → AI connections** and use `Authorization: Bearer <your PAT>`.
 

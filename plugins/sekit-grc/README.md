@@ -25,14 +25,18 @@ into the smallest relevant workflow; `sekit-mcp-guide` holds the full operationa
 
 ## Connector
 
-Configure a custom connector named `sekit-consultant` with:
+The OpenAI plugin includes Sekit's registered ChatGPT app mapping and the remote MCP configuration
+for Codex. Authorize that bundled connection when prompted; do not create a duplicate connector.
+
+Only in an unbundled OAuth-capable host, configure a custom connector named `sekit-consultant`
+with:
 
 ```text
 URL: https://sekit.ai/api/mcp/consultant
 ```
 
-Use the browser OAuth flow in ChatGPT and other OAuth-capable hosts. If the host instead supports
-custom authorization headers, create a Personal Access Token in Sekit under
+Complete Sekit's browser OAuth flow. If the host instead supports custom authorization headers,
+create a Personal Access Token in Sekit under
 **Settings → AI connections** and use `Authorization: Bearer <your PAT>`. Reconnect after a
 Sekit deployment if you need to refresh the connector's tool catalog. Never commit, log, or
 share a raw token.
@@ -57,8 +61,9 @@ codex plugin marketplace add Sekit-AI/sekit-grc-skills
 ```
 
 Restart the ChatGPT desktop app, select **Sekit GRC Skills** in the Plugins Directory, and
-install **Sekit GRC**. The OpenAI plugin is skills-only until Sekit's MCP is registered with a
-ChatGPT connection ID, so connect the MCP separately using the URL above.
+install **Sekit GRC**. The plugin bundles the registered Sekit app mapping for ChatGPT and the
+remote MCP configuration for Codex. Each user still completes Sekit's OAuth sign-in and consent
+flow for their own account.
 
 ## Build from source
 

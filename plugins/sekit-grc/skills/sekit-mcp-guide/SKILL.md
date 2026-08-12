@@ -22,11 +22,14 @@ https://sekit.ai/api/mcp/consultant
 
 Choose the authentication path the host supports:
 
-### OAuth 2.1 (ChatGPT and OAuth-capable MCP hosts)
+### OAuth 2.1 (ChatGPT, Codex, and OAuth-capable MCP hosts)
 
-1. Add the production URL as a custom connector named `sekit-consultant`.
-2. Complete the Sekit browser sign-in and consent flow when the host opens it.
-3. Return to the host and verify that the Sekit tools are available.
+1. If you installed the OpenAI `sekit-grc` plugin, open and authorize its bundled Sekit
+   connection. Do not create a duplicate connector.
+2. In an unbundled OAuth-capable host, add the production URL as a custom connector named
+   `sekit-consultant`.
+3. Complete the Sekit browser sign-in and consent flow when the host opens it.
+4. Return to the host and verify that the Sekit tools are available.
 
 Do not mint or paste a PAT when the host supports Sekit's OAuth flow.
 

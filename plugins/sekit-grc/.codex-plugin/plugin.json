@@ -12,10 +12,12 @@
   "license": "Apache-2.0",
   "keywords": ["cybersecurity", "grc", "compliance", "risk", "sekit"],
   "skills": "./skills/",
+  "apps": "./.app.json",
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Sekit GRC",
     "shortDescription": "Guided GRC workflows for Sekit consultants",
-    "longDescription": "Understand Sekit and carry out framework-agnostic risk, control, gap-analysis, asset, evidence, knowledge, and deliverable workflows. Connect the Sekit consultant MCP separately to work with live data.",
+    "longDescription": "Understand Sekit and carry out framework-agnostic risk, control, gap-analysis, asset, evidence, knowledge, and deliverable workflows through the bundled Sekit consultant connection.",
     "developerName": "Sekit AI",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],

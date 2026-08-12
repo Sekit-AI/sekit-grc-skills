@@ -26,7 +26,9 @@ Node.js 20+, `zip`, and `unzip` are required. The project has no npm dependencie
 - Keep Claude's manual artifact limited to `.claude-plugin/` and `skills/` at archive root.
 - Keep `.claude-plugin`, `.codex-plugin`, package, and marketplace metadata aligned.
 - Bump package and both plugin manifest versions together for released content changes.
-- Never commit secrets, PATs, client data, production identifiers, or private transcripts.
+- Never commit secrets, PATs, client data, private production identifiers, or private transcripts.
+  A registered app ID intentionally published in `.app.json` is public packaging metadata, not a
+  credential; verify it before changing it.
 - Run `npm test` before opening a pull request.
 
 Changes to authentication, authorization, tenant isolation, audit guarantees, token handling,

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "sekit-consultant": {
+      "type": "http",
+      "url": "https://sekit.ai/api/mcp/consultant",
+      "oauth_resource": "https://sekit.ai/api/mcp/consultant"
+    }
+  }
+}

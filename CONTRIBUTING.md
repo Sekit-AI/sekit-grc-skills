@@ -7,6 +7,8 @@ Thank you for helping make Sekit's GRC workflows clearer and safer for consultan
 - Search existing issues and pull requests.
 - Never include client data, credentials, Personal Access Tokens, private assessment material,
   or screenshots from a real tenant.
+- Treat the registered app ID in `.app.json` as public packaging metadata, never as a credential;
+  verify any replacement against the Sekit connection shown in ChatGPT Developer Mode.
 - Keep a skill focused on a recognizable consultant outcome. A product tour belongs in
   `sekit-onboarding`; shared connector mechanics belong in `sekit-mcp-guide`; domain procedure
   belongs in the relevant specialist skill.

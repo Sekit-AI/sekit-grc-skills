@@ -43,12 +43,42 @@ test('Claude and OpenAI manifests describe the same plugin version', () => {
   assert.equal(pkg.license, 'Apache-2.0');
   assert.equal(codex.license, pkg.license);
   assert.equal(codex.skills, './skills/');
+  assert.equal(codex.apps, './.app.json');
+  assert.equal(codex.mcpServers, './.mcp.json');
 
   assert.deepEqual(
     Object.keys(claude).sort(),
     ['description', 'name', 'version'],
     'the manual Claude artifact requires a minimal manifest',
   );
+});
+
+test('OpenAI packaging binds the registered Sekit app and OAuth MCP endpoint', () => {
+  const app = json('plugins/sekit-grc/.app.json');
+  const mcp = json('plugins/sekit-grc/.mcp.json');
+  const guide = readFileSync(
+    resolve(root, 'plugins/sekit-grc/skills/sekit-mcp-guide/SKILL.md'),
+    'utf8',
+  );
+
+  assert.deepEqual(app, {
+    apps: {
+      sekit: {
+        id: 'asdk_app_6a7c4a50d7dc8191a308cd414183e21e',
+      },
+    },
+  });
+  assert.deepEqual(mcp, {
+    mcpServers: {
+      'sekit-consultant': {
+        type: 'http',
+        url: 'https://sekit.ai/api/mcp/consultant',
+        oauth_resource: 'https://sekit.ai/api/mcp/consultant',
+      },
+    },
+  });
+  assert.match(guide, /authorize its bundled Sekit\n\s+connection/);
+  assert.match(guide, /Do not create a duplicate connector/);
 });
 
 test('Claude and OpenAI marketplaces point to the shared plugin directory', () => {
