@@ -31,7 +31,9 @@ jobs:
 
       - name: Create checksum
         working-directory: dist
-        run: sha256sum sekit-grc.plugin > sekit-grc.plugin.sha256
+        run: |
+          sha256sum sekit-grc.plugin sekit-grc-skills.zip > SHA256SUMS
+          (cd skills && sha256sum *.skill) >> SHA256SUMS
 
       - name: Publish GitHub release
         env:
@@ -39,7 +41,9 @@ jobs:
         run: >-
           gh release create "$GITHUB_REF_NAME"
           dist/sekit-grc.plugin
-          dist/sekit-grc.plugin.sha256
+          dist/sekit-grc-skills.zip
+          dist/skills/*.skill
+          dist/SHA256SUMS
           --verify-tag
           --generate-notes
           --title "Sekit GRC $GITHUB_REF_NAME"

@@ -75,6 +75,24 @@ the universal public Plugins Directory shared by ChatGPT and Codex is a separate
 step. The OpenAI plugin maps ChatGPT to Sekit's registered app and gives Codex the remote MCP
 configuration; both still require each user to authorize their own Sekit account.
 
+### ChatGPT direct skill upload
+
+Tagged releases also contain one ChatGPT-ready `.skill` file per workflow. This avoids the CLI
+when someone only needs the skills:
+
+1. Download the `.skill` files from the latest
+   [GitHub release](https://github.com/Sekit-AI/sekit-grc-skills/releases). The
+   `sekit-grc-skills.zip` asset contains all nine files for convenient download; unzip it first.
+2. In ChatGPT, open **Upload a skill** and upload each `.skill` file you want. For the guided
+   starting experience, upload `sekit-mcp-guide.skill` and `sekit-onboarding.skill`. Upload all
+   nine for the complete workflow set.
+3. Authorize the declared Sekit MCP connection when ChatGPT prompts you, then start a new chat and
+   invoke a skill with `@`, for example `@sekit-onboarding`.
+
+Each archive contains exactly one source skill, including its OpenAI metadata and Sekit MCP
+dependency. It contains no OAuth token, PAT, client data, or other credential. A direct skill
+upload installs that workflow rather than the full `sekit-grc` plugin listing.
+
 ## Connect Sekit
 
 The plugin uses Sekit's remote consultant MCP at:
@@ -103,8 +121,8 @@ npm test
 ```
 
 This validates the Claude and OpenAI manifests plus skill frontmatter, builds
-`dist/sekit-grc.plugin`, and verifies the Claude archive layout. There are no npm runtime
-dependencies.
+`dist/sekit-grc.plugin`, nine direct-upload `.skill` files, and a convenience ZIP, then verifies
+every archive against its canonical source. There are no npm runtime dependencies.
 
 To try an unpublished checkout in Claude Code:
 
@@ -120,7 +138,8 @@ connector vulnerabilities through [SECURITY.md](SECURITY.md), not a public issue
 
 This repository is the canonical source for the Sekit GRC plugin. A tag named `vX.Y.Z` must
 match both package and plugin manifest versions; the release workflow validates, builds, and
-attaches `sekit-grc.plugin`. Sekit may mirror that released artifact at
+attaches `sekit-grc.plugin`, the nine `.skill` files, their convenience ZIP, and checksums. Sekit
+may mirror the Claude artifact at
 `https://sekit.ai/downloads/sekit-grc.plugin` for in-product onboarding.
 
 Maintainer: Ricardo Rodríguez, [ricardo@sekit.ai](mailto:ricardo@sekit.ai).
