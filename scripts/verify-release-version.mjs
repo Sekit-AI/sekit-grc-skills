@@ -12,7 +12,10 @@ const codexVersion = readJson('plugins/sekit-grc/.codex-plugin/plugin.json').ver
 assert.equal(claudeVersion, packageVersion, 'Claude manifest version must match package.json');
 assert.equal(codexVersion, packageVersion, 'OpenAI manifest version must match package.json');
 
-const tag = process.argv[2] ?? process.env.GITHUB_REF_NAME;
+// Only validate a tag when the caller supplies one explicitly. GitHub exposes
+// synthetic ref names such as `1/merge` during pull-request CI, so treating the
+// ambient ref as a release tag makes ordinary validation fail.
+const tag = process.argv[2];
 if (tag) {
   assert.match(tag, /^v\d+\.\d+\.\d+$/, 'release tag must use vX.Y.Z');
   assert.equal(tag.slice(1), packageVersion, 'release tag must match all manifest versions');

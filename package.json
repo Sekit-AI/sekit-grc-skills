@@ -1,7 +1,7 @@
 {
   "name": "@sekit-ai/sekit-grc-skills",
   "version": "0.4.0",
-  "description": "Open-source GRC skills for consultants using Sekit, packaged as a Claude plugin.",
+  "description": "Open-source GRC skills for consultants using Sekit across Claude, ChatGPT, and Codex.",
   "private": true,
   "type": "module",
   "scripts": {
