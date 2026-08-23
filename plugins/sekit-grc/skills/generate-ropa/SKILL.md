@@ -41,13 +41,16 @@ Start from what Sekit already knows, then ask the client only for what's missing
    activity: purpose; categories of people and of data (flag special categories); who receives
    the data (processors, third parties); transfers outside the EU and under what safeguard;
    how long data is kept; the security measures that protect it.
-3. **`set_evidence_request_package(evidence_request_id, package_id, position)` for EACH
-   request** — requests are created standalone (`package_id` empty) and membership is
-   explicit; releasing a package only delivers its OWN members, and releasing an empty
-   package "succeeds" while the client receives nothing.
-4. `release_evidence_package` — nothing is visible to the client until released. (Skipping
-   the package? Release requests individually with `release_evidence_request` or in paced
-   batches with `release_wave`.)
+3. **`set_evidence_request_package(client_organization_id, evidence_request_id, package_id,
+   position)` for EACH request** — requests are created standalone (`package_id` empty) and
+   membership is explicit; releasing a package only delivers its OWN members, and releasing an
+   empty package "succeeds" while the client receives nothing.
+4. **Notify the client with `release_evidence_request` for EACH request.** Your ad-hoc
+   requests are already `pending` (portal-visible to the contact since creation), and
+   `release_evidence_package` only promotes and emails a package's **queued** members — on a
+   package built from ad-hoc requests it flips the package to `released` and sends nothing.
+   Release the package too so its lifecycle reads `released`, but the per-request release is
+   what puts the email in the client's inbox.
 5. Read replies with `get_submission_markdown`; follow up with `post_thread_message`.
 
 ## 2. DRAFT

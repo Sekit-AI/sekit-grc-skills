@@ -109,8 +109,14 @@ URL: https://sekit.ai/api/mcp/consultant
   under **Settings → AI connections** and use `Authorization: Bearer <your PAT>`.
 
 Treat a PAT like a password. It is shown once; never commit it, paste it into an issue, or
-include it in a conversation transcript. The `sekit-onboarding` and `sekit-mcp-guide` skills
+include it in a conversation transcript. A PAT carries the full authority of your Sekit
+account; there are no per-token scopes. The `sekit-onboarding` and `sekit-mcp-guide` skills
 provide the guided setup and readiness check for each host.
+
+A valid connection is not enough on its own: the tools also require an **active Sekit
+subscription or trial** for your firm. Without one, every call answers HTTP 402
+`subscription_required`; activate the workspace in the Sekit console (`/app/activate`) and
+retry — re-authenticating does not fix it.
 
 ## Develop locally
 

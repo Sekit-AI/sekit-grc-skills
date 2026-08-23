@@ -102,7 +102,10 @@ shows the current links.
 the work item it's linked to (e.g. the risk's title or the control's code + name) — alongside the
 raw `asset_id` / `linkable_id` / `role`. Use them to report links in plain language ("Prod DB is
 *affected* by the risk «Datos de clientes sin cifrado»") without a second lookup. `linkable_label`
-is `null` when the linked record was archived or isn't visible.
+is **always** `null` when the target is a `GapAnalysis` (analyses have no display name) —
+describe those links by the analysis's framework from `get_gap_analysis` instead — and
+otherwise only when the target cannot be resolved at all; an archived target still shows its
+label.
 
 ### 6. Governance (when asked)
 

@@ -21,7 +21,7 @@ or more than one is a clean 422.
 
 | Leg | Param | Source | When |
 |---|---|---|---|
-| **RCF / Sekit CSF** | `control_id` | `list_controls` / `search_controls` / `get_control` | Triaging via the canonical Sekit lens (the crosswalk projects onto every mapped framework). **Also pass `framework`** (must match the gap analysis). |
+| **RCF / Sekit CSF** | `control_id` | `list_controls` / `search_controls` / `get_control` | Triaging via the canonical Sekit lens (the crosswalk projects onto every mapped framework). **Also pass `framework`** when the gap analysis has a catalog-framework lens (it must match the analysis); **omit it** when the analysis is custom-framework scoped — there it is rejected. |
 | **Native framework** | `framework_control_id` | `list_framework_controls` | Triaging a framework at its own granularity (e.g. ISO 27001 `A.5.1`). Must belong to the gap analysis's framework. **Only `is_leaf=true` rows are assessable** — hierarchy headers (`is_leaf=false`) are skipped on import (SK-245). |
 | **Custom** | `custom_control_id` | tenant custom controls | A custom-framework gap analysis. **Omit `framework`** (no framework lens). |
 
@@ -68,10 +68,11 @@ than implying a real assessment produced it.
 
 ## Useful optional fields
 
-`confidence` (`high`/`medium`/`low`), `notes`, `recommended_remediation`, `estimated_effort`,
-`current_tier` / `target_tier` (0–4), `owner_type`, `nist_function` (`GV`/`ID`/`PR`/`DE`/`RS`/
-`RC`), `gdpr_articles`, `last_reviewed_at`, `assessment_id` (must belong
-to the same client).
+`confidence` (`high`/`medium`/`low`), `notes`, `recommended_remediation`, `estimated_effort`
+(`low`/`medium`/`high`), `current_tier` / `target_tier` (0–4), `owner_type`
+(`consultant`/`client_internal`/`external_specialist`), `impact_type`, `nist_function`
+(`GV`/`ID`/`PR`/`DE`/`RS`/`RC`), `gdpr_articles`, `last_reviewed_at`, `assessment_id` (must
+belong to the same client).
 
 ## Process
 
@@ -95,7 +96,10 @@ to the same client).
 7. **Evidence** — `create_evidence(evidenceable_type="ControlEvaluation", evidenceable_id=<id>,
    ...)`. See **manage-evidence-and-deliverables**.
 8. **Batch** — for a bulk re-key from an external assessment, `import_control_evaluations`
-   exists; prefer per-control calls when judgement matters.
+   takes `evaluations: [...]` (1–200 rows, each with the same leg + `status` +
+   `evidence_source` + `evaluated_at` rules as a single create) and returns what it created
+   plus a `skipped` list (e.g. non-leaf controls) — the result is not 1:1 with the input.
+   Prefer per-control calls when judgement matters.
 
 ## Bandeja triage — reviewing agent proposals
 
