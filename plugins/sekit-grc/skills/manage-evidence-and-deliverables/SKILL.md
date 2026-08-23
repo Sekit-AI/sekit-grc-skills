@@ -123,13 +123,15 @@ treated as egress: confirm the client, the assigned contact, and the content bef
 
 - **One-off ask →** `create_evidence_request`. Use it for an ad-hoc "please upload X" or
   "confirm you did Y". `kind` is `upload_evidence` (a document) or `confirm_task` (a
-  done-check); `title` is required. It lands **`pending` immediately** — visible in the portal to
-  its assigned contact as soon as it exists (there is no draft state for an ad-hoc request), but
-  **no email goes out** until you release it (`release_evidence_request`, the «Enviar al
-  cliente» action, stamps `released_at` and sends the magic link). So: write the title and
-  instructions you are happy for the client to read, or create it without a contact and assign
-  one when it is ready. An ad-hoc request is created **standalone** (no package); attach it
-  with `set_evidence_request_package` if it belongs to one. Optionally link it to a control
+  done-check); `title` is required. It lands **`pending`** (there is no draft state), with **no
+  package and no email**. The client portal renders asks **by package**, so a standalone
+  request is shown nowhere until you attach it with `set_evidence_request_package` to a package
+  the client can see — the released active package, or the standing «Otros» package (find
+  both with `list_evidence_packages`); inside a `draft` package only the package name shows.
+  The email goes out only when you release it (`release_evidence_request`, the «Enviar al
+  cliente» action, stamps `released_at` and sends the magic link) — do that after it sits in a
+  visible package, or the link leads to a portal where the ask is not listed. Optionally link
+  it to a control
   evaluation or gap analysis (`control_evaluation_id` / `gap_analysis_id`, same-client), assign
   a contact, or set a due date. Edit later with `update_evidence_request` (title, instructions,
   due date, contact, or a legal `status` move).
@@ -220,8 +222,9 @@ deterministic instantiator MCP tool (the old `instantiate_evidence_plan` was ret
 - Artifacts land `draft`; lifecycle fields are server-controlled; `approve_artifact` is
   owner-only.
 - `handling` required for confidential / strictly_confidential artifacts.
-- An ad-hoc `create_evidence_request` lands **`pending`** and portal-visible to its assigned
-  contact at once; its email goes out only when you `release_evidence_request` it (a package
+- An ad-hoc `create_evidence_request` lands **`pending`** with no package: the portal renders
+  asks by package, so it is invisible until `set_evidence_request_package` puts it in one the
+  client can see; its email goes out only when you `release_evidence_request` it (a package
   release emails **queued** members only; `generate_evidence_requests` emails its first wave by
   itself). A release with no assigned contact is refused.
 - `list_evidence_requests` returns `{evidence_requests, unmatched_submissions}` — the second

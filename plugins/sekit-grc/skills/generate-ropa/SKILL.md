@@ -45,11 +45,11 @@ Start from what Sekit already knows, then ask the client only for what's missing
    position)` for EACH request** — requests are created standalone (`package_id` empty) and
    membership is explicit; releasing a package only delivers its OWN members, and releasing an
    empty package "succeeds" while the client receives nothing.
-4. **Notify the client with `release_evidence_request` for EACH request.** Your ad-hoc
-   requests are already `pending` (portal-visible to the contact since creation), and
-   `release_evidence_package` only promotes and emails a package's **queued** members — on a
-   package built from ad-hoc requests it flips the package to `released` and sends nothing.
-   Release the package too so its lifecycle reads `released`, but the per-request release is
+4. **Release the package, then notify the client with `release_evidence_request` for EACH
+   request.** The portal renders asks by package: `release_evidence_package` flips the package
+   to `released` so it becomes the client's active package and your ad-hoc requests (already
+   `pending`) appear on the portal — but it only emails a package's **queued** members, so on a
+   package built from ad-hoc requests it sends nothing. The per-request release is
    what puts the email in the client's inbox.
 5. Read replies with `get_submission_markdown`; follow up with `post_thread_message`.
 
