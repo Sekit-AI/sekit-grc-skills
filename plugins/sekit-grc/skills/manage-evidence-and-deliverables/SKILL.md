@@ -146,11 +146,12 @@ treated as egress: confirm the client, the assigned contact, and the content bef
 
 ### Releasing (CLIENT-FACING)
 
-An ad-hoc request sends no email until you **release** it. Two other paths email on their own
-and you should know them before you promise a client silence: `generate_evidence_requests`
-emails its first wave inside the generation call, and a package's auto-advance can email the
-contact after a `review_evidence_request` verdict. The three release tools, by what they act
-on:
+An ad-hoc request sends no email until you **release** it. Other paths email the client on
+their own, so never promise silence beyond that request: `generate_evidence_requests` emails
+its first wave inside the generation call; a package's auto-advance can email after a
+`review_evidence_request` verdict; reassigning a package (`update_evidence_package` with a new
+assignee), reopening one, `post_thread_message`, and the scheduled nudge sweep all send mail.
+The three release tools, by what they act on:
 
 - **`release_evidence_package`** (CLIENT-FACING) — release a whole draft package: flips
   `draft → released`, promotes its **queued** members to `pending` and emails their contacts.
