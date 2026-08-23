@@ -184,8 +184,10 @@ document (`kind="upload_evidence"`) or confirm a task is done (`kind="confirm_ta
 lifecycle spans your side and the client's portal:
 
 1. **Create** a request (`create_evidence_request`; `kind` + `title` required) — it lands
-   **`pending`** and is portal-visible to its assigned contact as soon as it exists, but **no
-   email is sent yet**. Requests that `generate_evidence_requests` creates from a gap analysis
+   **`pending`** with **no package and no email**. The portal renders asks **by package**: a
+   standalone request is shown nowhere until `set_evidence_request_package` puts it in a
+   package the client can see (the released active package or the standing «Otros»).
+   Requests that `generate_evidence_requests` creates from a gap analysis
    are different: the first wave (`wave_size`, default 8) is released **and emailed by the
    generation call itself**, and the rest start `queued` until `release_wave` promotes them.
    Editing metadata (title, due date, contact, status) is `update_evidence_request`.
@@ -209,8 +211,9 @@ that is already `pending` is not re-notified by it; release that one with
 `release_evidence_request`.
 `create_evidence_package` (born `draft`), `update_evidence_package` (rename / set assignee +
 due date), then drive the `draft → released → complete | closed` lifecycle:
-`release_evidence_package` (**client-facing** — flips draft→released, makes members
-portal-visible, emails the contact), `close_evidence_package` (end a package early — cancels
+`release_evidence_package` (**client-facing** — flips draft→released so the package becomes
+the client's active one and its asks appear on the portal; emails the contacts of its queued
+members), `close_evidence_package` (end a package early — cancels
 open asks), `reopen_evidence_package` (revisit a finished/closed package). Move an ask between
 packages or re-order it with `set_evidence_request_package(client_organization_id,
 evidence_request_id, package_id, position)`.
