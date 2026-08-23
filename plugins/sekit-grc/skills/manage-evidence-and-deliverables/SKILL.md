@@ -133,8 +133,10 @@ treated as egress: confirm the client, the assigned contact, and the content bef
   evaluation or gap analysis (`control_evaluation_id` / `gap_analysis_id`, same-client), assign
   a contact, or set a due date. Edit later with `update_evidence_request` (title, instructions,
   due date, contact, or a legal `status` move).
-- **A themed batch →** a **package**. Requests generated from a plan or a package start
-  `queued` inside it; a package is the unit you release and track. `create_evidence_package` (born `draft`, name = the theme,
+- **A themed batch →** a **package**. Requests instantiated from a package start `queued`
+  inside it; a package is the unit you release and track. (Requests generated from a gap
+  analysis with `generate_evidence_requests` are standalone: the first wave is released and
+  emailed by the generation call, the rest wait `queued` for `release_wave` — see D.) `create_evidence_package` (born `draft`, name = the theme,
   e.g. «Control de accesos»), `update_evidence_package` (rename, set assignee + due date — a
   package assignee inherits down to member asks that lack their own contact),
   `list_evidence_packages` / `get_evidence_package` (each carries collection rollups:
@@ -144,19 +146,25 @@ treated as egress: confirm the client, the assigned contact, and the content bef
 
 ### Releasing (CLIENT-FACING)
 
-No email reaches the client until you **release**. Three tools, by what they act on:
+An ad-hoc request sends no email until you **release** it. Two other paths email on their own
+and you should know them before you promise a client silence: `generate_evidence_requests`
+emails its first wave inside the generation call, and a package's auto-advance can email the
+contact after a `review_evidence_request` verdict. The three release tools, by what they act
+on:
 
-- **`release_evidence_package`** (CLIENT-FACING) — release a whole draft package (flips
-  `draft → released`, makes its members portal-visible, emails the contact). The package is
-  the pacing unit: release one themed package at a time so you don't flood the client.
+- **`release_evidence_package`** (CLIENT-FACING) — release a whole draft package: flips
+  `draft → released`, promotes its **queued** members to `pending` and emails their contacts.
+  Members that are already `pending` (an ad-hoc request you attached) are **not** re-notified
+  by it — release those with `release_evidence_request`. The package is the pacing unit:
+  release one themed package at a time so you don't flood the client.
 - **`release_evidence_request`** (CLIENT-FACING) — «Enviar al cliente» for ONE request that is
   already `pending` or `correction_requested` (an ad-hoc request, or a member you want to send
   on its own): stamps `released_at` and sends the magic-link email. It does not promote
   `queued` rows.
-- **`release_wave`** (CLIENT-FACING) — the "Liberar ahora" action for **queued** requests
-  (generated from a plan or a package): promotes the next queued rows (oldest position first)
-  to fill the client's active window (default 8 concurrent), or one full batch when
-  `force=true`; each promoted request becomes portal-visible and triggers its release email.
+- **`release_wave`** (CLIENT-FACING) — the "Liberar ahora" action for **queued** requests:
+  promotes the next queued rows (oldest wave/position first) to fill the client's active
+  window (default 8 concurrent), or one full batch when `force=true`; each promoted request
+  becomes portal-visible and triggers its release email.
 - A release with **no assigned contact is refused** (`validation_error`) — assign one first
   (`update_evidence_request` / `update_evidence_package`). Releases are **idempotent**: a second
   call on an already-released request/package is a clean no-op (no second email).
@@ -212,9 +220,9 @@ deterministic instantiator MCP tool (the old `instantiate_evidence_plan` was ret
   owner-only.
 - `handling` required for confidential / strictly_confidential artifacts.
 - An ad-hoc `create_evidence_request` lands **`pending`** and portal-visible to its assigned
-  contact at once; only a **release** (`release_evidence_request` / `release_evidence_package` /
-  `release_wave` for queued rows) sends the email, and a release with no assigned contact is
-  refused.
+  contact at once; its email goes out only when you `release_evidence_request` it (a package
+  release emails **queued** members only; `generate_evidence_requests` emails its first wave by
+  itself). A release with no assigned contact is refused.
 - `list_evidence_requests` returns `{evidence_requests, unmatched_submissions}` — the second
   list holds drop-zone uploads the client sent that are not yet placed on any request. Read it;
   evidence the client already provided is easy to miss otherwise.

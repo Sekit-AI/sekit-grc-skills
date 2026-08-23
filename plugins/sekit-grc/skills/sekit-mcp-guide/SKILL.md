@@ -185,7 +185,9 @@ lifecycle spans your side and the client's portal:
 
 1. **Create** a request (`create_evidence_request`; `kind` + `title` required) — it lands
    **`pending`** and is portal-visible to its assigned contact as soon as it exists, but **no
-   email is sent yet**. Requests generated from a plan or a package start `queued` instead.
+   email is sent yet**. Requests that `generate_evidence_requests` creates from a gap analysis
+   are different: the first wave (`wave_size`, default 8) is released **and emailed by the
+   generation call itself**, and the rest start `queued` until `release_wave` promotes them.
    Editing metadata (title, due date, contact, status) is `update_evidence_request`.
 2. **Release** it (`release_evidence_request` for a pending request, `release_wave` to promote
    queued ones) — this **REACHES THE CLIENT**: stamps `released_at` and (on a fresh release)
@@ -200,8 +202,11 @@ lifecycle spans your side and the client's portal:
 5. `archive_evidence_request` / `restore_evidence_request` soft-delete / undo (owner-only).
 
 **Packages** are the pacing unit: a themed bundle of requests released one package at a time.
-Generated requests are born inside a package; an ad-hoc request is created standalone and
-joins one only through `set_evidence_request_package`.
+Requests instantiated from a package start `queued` inside it; ad-hoc and generated requests
+are created standalone and join a package only through `set_evidence_request_package`.
+`release_evidence_package` promotes and emails the package's **queued** members — a member
+that is already `pending` is not re-notified by it; release that one with
+`release_evidence_request`.
 `create_evidence_package` (born `draft`), `update_evidence_package` (rename / set assignee +
 due date), then drive the `draft → released → complete | closed` lifecycle:
 `release_evidence_package` (**client-facing** — flips draft→released, makes members
@@ -274,10 +279,10 @@ returned object, check the tool's argument list before retrying.
 ## Soft-delete model
 
 Nothing is hard-deleted. "Delete" = **archive** (`archive_*`), which hides the row from default
-lists; **`restore_*`** brings it back. Both are **owner-only** for every work item except
-contacts. Only `list_clients` offers `archived=true`; the other listers return kept rows only,
-so an archived risk, asset, or request is invisible until restored. Prefer archive over
-treating data as gone.
+lists; **`restore_*`** brings it back. Both are **owner-only**, for every pair. Only
+`list_clients` offers `archived=true`; the other listers return kept rows only, so an archived
+risk, asset, or request is invisible until restored. Prefer archive over treating data as
+gone.
 
 ## Tenancy, authorization, and audit guarantees
 
@@ -287,11 +292,10 @@ identity, whether the host obtained it through OAuth or a PAT. What that buys yo
 - **Tenant isolation** (Postgres RLS): you can only see/touch clients in **your firm**. A
   cross-tenant id returns 404, never another firm's data.
 - **Role-based actions**: some actions are **owner-only** — `approve_artifact` /
-  `approve_risk`, and the `archive_*` / `restore_*` pairs for client work items (risks,
-  control evaluations, gap analyses, evidence, evidence requests, assets, asset links,
-  artifacts, client files, custom controls and frameworks). Contacts are the exception: any
-  consultant may archive or restore a contact. As a `member` you'll get a clean authorization
-  error on the owner-only ones; that's expected, not a bug.
+  `approve_risk`, and every `archive_*` / `restore_*` pair on this surface (risks, control
+  evaluations, gap analyses, evidence, evidence requests, assets, asset links, artifacts,
+  client files, contacts, custom controls and frameworks). As a `member` you'll get a clean
+  authorization error on those; that's expected, not a bug.
 - **Write audit trail**: database audit records attribute changes to the authenticated user.
   Inspect them with `list_audit_log` and `get_audit_entry` when needed. Read-only MCP calls do
   not create per-record audit entries, so never describe a read as audit-tracked.
