@@ -24,7 +24,7 @@ agents and consultants co-maintain (the same pages the web **Knowledge Base** UI
 | `wiki_read(client_organization_id, path)` | Read one page. |
 | `wiki_search(client_organization_id, query)` | Find pages/passages by text. |
 | `wiki_write(client_organization_id, path, body)` | Create or **overwrite** a page (returns a confirmation string, or `"(error: ...)"`). |
-| `wiki_append(client_organization_id, path, body)` | Append to a page (create-if-absent). |
+| `wiki_append(client_organization_id, path, line)` | Append ONE line to a page (create-if-absent). The argument is `line`, not `body`; the newline is added for you. |
 
 ## Process
 

@@ -44,7 +44,9 @@ Do not mint or paste a PAT when the host supports Sekit's OAuth flow.
    Authorization: Bearer <your PAT>
    ```
 3. Never expose the PAT in a prompt, transcript, issue, log, or committed configuration. Rotate
-   it by creating a replacement and then revoking the old token.
+   it by creating a replacement and then revoking the old token. A PAT carries the **full
+   authority of the user's account** — there are no per-token scopes — so treat it exactly
+   like the user's password.
 
 For local Sekit development only, use `http://localhost:3000/api/mcp/consultant`.
 
@@ -61,8 +63,9 @@ Before any client-scoped tool call, orient yourself. Skipping this is the most c
 "which client?" confusion and wrong-id writes.
 
 1. **`whoami`** — who you are, your role (`consultant`/`admin`), your `role_in_org`
-   (`owner`/`member`), and your firm (`organization`). If `organization` is `null`, the user
-   hasn't finished onboarding — stop and tell them.
+   (`owner`/`member`), and your firm (`organization`). A caller without an organization
+   never reaches this tool (the server answers 401 first), so `organization` is always set
+   here.
 2. **`list_clients`** — the client organizations in your firm. **Each row's `id` is the
    `client_organization_id`** that every client-scoped tool takes as its first argument. Pass
    `archived=true` to list only soft-deleted clients.
@@ -180,13 +183,14 @@ that its guidance will be sparse (mostly `null` / `projected`) so most fields ar
 document (`kind="upload_evidence"`) or confirm a task is done (`kind="confirm_task"`). Their
 lifecycle spans your side and the client's portal:
 
-1. **Create** a request (`create_evidence_request`) — it starts **queued** and is NOT
-   client-visible. Editing metadata (title, due date, contact, status) is
-   `update_evidence_request`.
-2. **Release** it (`release_evidence_request`, or `release_wave` for a paced batch) — this
-   **REACHES THE CLIENT**: the request goes portal-visible and (on a fresh release) emails the
-   assigned contact a magic link. A request with no assigned contact can't be released — assign
-   one first via `update_evidence_request`.
+1. **Create** a request (`create_evidence_request`; `kind` + `title` required) — it lands
+   **`pending`** and is portal-visible to its assigned contact as soon as it exists, but **no
+   email is sent yet**. Requests generated from a plan or a package start `queued` instead.
+   Editing metadata (title, due date, contact, status) is `update_evidence_request`.
+2. **Release** it (`release_evidence_request` for a pending request, `release_wave` to promote
+   queued ones) — this **REACHES THE CLIENT**: stamps `released_at` and (on a fresh release)
+   emails the assigned contact a magic link. A request with no assigned contact can't be
+   released — assign one first via `update_evidence_request`.
 3. The **client submits** through the portal. You read what came back with
    `get_evidence_request` (full timeline + submissions) and `get_submission_markdown` (the
    extracted text of one submission).
@@ -195,13 +199,16 @@ lifecycle spans your side and the client's portal:
    **requires a non-blank `reason` (shown to the client)**; `accepted` does not.
 5. `archive_evidence_request` / `restore_evidence_request` soft-delete / undo (owner-only).
 
-**Packages** group requests into themed waves — every request belongs to exactly one package.
+**Packages** are the pacing unit: a themed bundle of requests released one package at a time.
+Generated requests are born inside a package; an ad-hoc request is created standalone and
+joins one only through `set_evidence_request_package`.
 `create_evidence_package` (born `draft`), `update_evidence_package` (rename / set assignee +
 due date), then drive the `draft → released → complete | closed` lifecycle:
 `release_evidence_package` (**client-facing** — flips draft→released, makes members
-portal-visible, emails the contact), `close_evidence_package` (end a wave early — cancels open
-asks), `reopen_evidence_package` (revisit a finished/closed wave). Move an ask between packages
-or re-order it with `set_evidence_request_package`.
+portal-visible, emails the contact), `close_evidence_package` (end a package early — cancels
+open asks), `reopen_evidence_package` (revisit a finished/closed package). Move an ask between
+packages or re-order it with `set_evidence_request_package(client_organization_id,
+evidence_request_id, package_id, position)`.
 
 **Threads** are the multiplayer conversation. `post_thread_message` is **client-facing** —
 pass `evidence_request_id` to post on that request's thread (the client sees it in their
@@ -233,7 +240,19 @@ decision timeline), then decide with `approve_control_evaluation` or `reject_con
 
 ## Result + error shapes (no exceptions — read the value)
 
-MCP tools here **never raise** — failures come back as a value you must inspect:
+Two refusals happen at the **transport** level, before any tool runs, and look like a
+connector failure rather than a tool result:
+
+- **401 Unauthorized** (with a `WWW-Authenticate` challenge) — the token is missing, revoked,
+  expired, or not a consultant's. Fix the connection (re-authorize OAuth or mint a fresh PAT).
+- **402 `subscription_required`** (JSON-RPC error `-32001`, message starting
+  `subscription_required:`) — the credential is valid but the firm has **no active Sekit
+  subscription or trial**. Re-authenticating cannot fix this: the user (or their firm's owner)
+  must activate the workspace in the Sekit console (`/app/activate`), then retry. Tell them
+  that plainly instead of looping through the connector setup.
+
+Once a call reaches a tool, tools **never raise** — failures come back as a value you must
+inspect:
 
 - Most tools return the object/list on success, or **`{"error": "..."}`** on failure.
 - The wiki write/append tools return a confirmation string on success, or **`"(error: ...)"`**
@@ -247,11 +266,18 @@ the bad field, a 404 for a wrong/cross-tenant id). Fix the offending argument an
 causes: a NOT-NULL field omitted, an enum typo, a cross-tenant id (404), or an XOR-leg violation
 (see evaluate-controls / run-gap-analysis).
 
+**Unknown arguments are dropped silently.** The tool doors strip any key that is not in the
+tool's schema (a retired field, a typo) instead of erroring, so a stale habit fails invisibly:
+the call "succeeds" and the value never lands. When a field you set is missing from the
+returned object, check the tool's argument list before retrying.
+
 ## Soft-delete model
 
 Nothing is hard-deleted. "Delete" = **archive** (`archive_*`), which hides the row from default
-lists; **`restore_*`** brings it back. List archived rows with `archived=true` where the lister
-supports it. Prefer archive over treating data as gone.
+lists; **`restore_*`** brings it back. Both are **owner-only** for every work item except
+contacts. Only `list_clients` offers `archived=true`; the other listers return kept rows only,
+so an archived risk, asset, or request is invisible until restored. Prefer archive over
+treating data as gone.
 
 ## Tenancy, authorization, and audit guarantees
 
@@ -260,9 +286,12 @@ identity, whether the host obtained it through OAuth or a PAT. What that buys yo
 
 - **Tenant isolation** (Postgres RLS): you can only see/touch clients in **your firm**. A
   cross-tenant id returns 404, never another firm's data.
-- **Role-based actions**: some actions are **owner-only** — notably
-  `approve_artifact` / `approve_risk`. As a `member` you'll get a clean authorization error;
-  that's expected, not a bug.
+- **Role-based actions**: some actions are **owner-only** — `approve_artifact` /
+  `approve_risk`, and the `archive_*` / `restore_*` pairs for client work items (risks,
+  control evaluations, gap analyses, evidence, evidence requests, assets, asset links,
+  artifacts, client files, custom controls and frameworks). Contacts are the exception: any
+  consultant may archive or restore a contact. As a `member` you'll get a clean authorization
+  error on the owner-only ones; that's expected, not a bug.
 - **Write audit trail**: database audit records attribute changes to the authenticated user.
   Inspect them with `list_audit_log` and `get_audit_entry` when needed. Read-only MCP calls do
   not create per-record audit entries, so never describe a read as audit-tracked.

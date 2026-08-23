@@ -1,6 +1,6 @@
 ---
 name: manage-evidence-and-deliverables
-description: "Attach evidence, run the evidence-collection workflow (solicitudes + packages), and manage files and deliverables for a Sekit client over the consultant MCP. Link evidence to a risk or control evaluation, request evidence from a client and review their submissions, group requests into released waves, upload client files and artifacts via the two-step presigned flow, and govern deliverables from draft to approved. Use when the user wants to back a risk or control with evidence, ask a client for a document (an evidence request or solicitud), review a submission, create or release an evidence package or wave, generate an evidence plan from a gap analysis, upload a document or screenshot for a Sekit client, produce or track a deliverable such as a gap report, policy, risk register, ROPA, or IR plan, approve or revert a deliverable, or manage a client's files. Read the sekit-mcp-guide skill first."
+description: "Attach evidence, run the evidence-collection workflow (solicitudes + packages), and manage files and deliverables for a Sekit client over the consultant MCP. Link evidence to a risk or control evaluation, request evidence from a client and review their submissions, group requests into released packages, upload client files and artifacts via the two-step presigned flow, and govern deliverables from draft to approved. Use when the user wants to back a risk or control with evidence, ask a client for a document (an evidence request or solicitud), review a submission, create or release an evidence package or wave, generate an evidence plan from a gap analysis, upload a document or screenshot for a Sekit client, produce or track a deliverable such as a gap report, policy, risk register, ROPA, or IR plan, approve or revert a deliverable, or manage a client's files. Read the sekit-mcp-guide skill first."
 ---
 
 # Manage evidence + deliverables
@@ -8,7 +8,7 @@ description: "Attach evidence, run the evidence-collection workflow (solicitudes
 Three related jobs over the Sekit consultant MCP: **(A) evidence** — linking proof to a risk or
 control evaluation; **(B) files + deliverables** — uploading client files and producing,
 governing, and approving artifacts; and **(C) solicitudes + packages** — the client-facing
-collection workflow (ask a client for evidence, group asks into released waves, review what
+collection workflow (ask a client for evidence, group asks into released packages, review what
 comes back). Read **sekit-mcp-guide** first.
 
 > **A vs C — don't confuse them.** `create_evidence` (A) records that a *thing you already
@@ -32,8 +32,9 @@ The **source field is determined by `kind`** (Sekit returns a 422 on a mismatch)
 | `inference` | `body` | your reasoned conclusion (free text) |
 | `artifact` | `artifact_id` | a deliverable (see B) |
 
-Optional: `confidence` (`high`/`medium`/`low`, defaults `medium`), `collected_at` (ISO-8601;
-omit to record now — set it only to backfill historical evidence). The collecting user comes
+Optional: `confidence` (`high`/`medium`/`low`, defaults `medium`), `collected_at` (a full ISO-8601
+timestamp **with offset**, e.g. `2026-06-09T10:00:00+02:00` — a bare date is rejected; omit to
+record now and set it only to backfill historical evidence). The collecting user comes
 from the authenticated connector identity.
 
 - `list_evidence` / `get_evidence` to review what's attached.
@@ -113,8 +114,8 @@ a file — the old blob is purged). Review with `list_artifacts` / `get_artifact
 
 ## C. Solicitudes (evidence requests) + packages
 
-The collection workflow: **ask the client for evidence**, group asks into **packages**
-released one **wave** at a time, and **review** what comes back. Several tools here **reach the
+The collection workflow: **ask the client for evidence**, group asks into **packages** (the
+pacing unit — one themed package released at a time), and **review** what comes back. Several tools here **reach the
 client** (portal visibility + email) — they are marked **CLIENT-FACING** below and must be
 treated as egress: confirm the client, the assigned contact, and the content before firing.
 
@@ -122,12 +123,18 @@ treated as egress: confirm the client, the assigned contact, and the content bef
 
 - **One-off ask →** `create_evidence_request`. Use it for an ad-hoc "please upload X" or
   "confirm you did Y". `kind` is `upload_evidence` (a document) or `confirm_task` (a
-  done-check). It starts **queued** (not client-visible). Optionally link it to a control
+  done-check); `title` is required. It lands **`pending` immediately** — visible in the portal to
+  its assigned contact as soon as it exists (there is no draft state for an ad-hoc request), but
+  **no email goes out** until you release it (`release_evidence_request`, the «Enviar al
+  cliente» action, stamps `released_at` and sends the magic link). So: write the title and
+  instructions you are happy for the client to read, or create it without a contact and assign
+  one when it is ready. An ad-hoc request is created **standalone** (no package); attach it
+  with `set_evidence_request_package` if it belongs to one. Optionally link it to a control
   evaluation or gap analysis (`control_evaluation_id` / `gap_analysis_id`, same-client), assign
   a contact, or set a due date. Edit later with `update_evidence_request` (title, instructions,
   due date, contact, or a legal `status` move).
-- **A themed batch →** a **package**. Every request belongs to exactly one package; a package
-  is the unit you release and track. `create_evidence_package` (born `draft`, name = the theme,
+- **A themed batch →** a **package**. Requests generated from a plan or a package start
+  `queued` inside it; a package is the unit you release and track. `create_evidence_package` (born `draft`, name = the theme,
   e.g. «Control de accesos»), `update_evidence_package` (rename, set assignee + due date — a
   package assignee inherits down to member asks that lack their own contact),
   `list_evidence_packages` / `get_evidence_package` (each carries collection rollups:
@@ -135,25 +142,29 @@ treated as egress: confirm the client, the assigned contact, and the content bef
   posture**). Move an ask between packages or re-order it with `set_evidence_request_package`
   (`position` is 0-based).
 
-### Releasing — the wave metaphor (CLIENT-FACING)
+### Releasing (CLIENT-FACING)
 
-Nothing reaches the client until you **release** it. Two granularities:
+No email reaches the client until you **release**. Three tools, by what they act on:
 
-- **`release_wave`** (CLIENT-FACING) — the "Liberar ahora" action. Promotes the next queued
-  requests (oldest wave/position first) to fill the client's active pacing window (default 8
-  concurrent), or one full batch when `force=true`. Each promoted request becomes
-  portal-visible and triggers its release email. **Prefer this** — it respects the client's
-  pacing so you don't flood them.
-- **`release_evidence_request`** (CLIENT-FACING) — release ONE request now, bypassing the
-  pacing window. **`release_evidence_package`** (CLIENT-FACING) — release a whole draft package
-  (flips `draft → released`, makes members portal-visible, emails the contact).
+- **`release_evidence_package`** (CLIENT-FACING) — release a whole draft package (flips
+  `draft → released`, makes its members portal-visible, emails the contact). The package is
+  the pacing unit: release one themed package at a time so you don't flood the client.
+- **`release_evidence_request`** (CLIENT-FACING) — «Enviar al cliente» for ONE request that is
+  already `pending` or `correction_requested` (an ad-hoc request, or a member you want to send
+  on its own): stamps `released_at` and sends the magic-link email. It does not promote
+  `queued` rows.
+- **`release_wave`** (CLIENT-FACING) — the "Liberar ahora" action for **queued** requests
+  (generated from a plan or a package): promotes the next queued rows (oldest position first)
+  to fill the client's active window (default 8 concurrent), or one full batch when
+  `force=true`; each promoted request becomes portal-visible and triggers its release email.
 - A release with **no assigned contact is refused** (`validation_error`) — assign one first
   (`update_evidence_request` / `update_evidence_package`). Releases are **idempotent**: a second
   call on an already-released request/package is a clean no-op (no second email).
 
-Lifecycle the package through `release_evidence_package` → `close_evidence_package` (end a wave
-early — cancels the client-actionable asks so they vanish from the portal; optional `reason`) →
-`reopen_evidence_package` (revisit a finished/closed wave — resets nudge counters). The
+Lifecycle the package through `release_evidence_package` → `close_evidence_package` (end a
+package early — cancels the client-actionable asks so they vanish from the portal; optional
+`reason`) → `reopen_evidence_package` (revisit a finished/closed package — resets nudge
+counters). The
 standing «Otros» package can't be closed.
 
 ### The review-verdict loop
@@ -200,9 +211,13 @@ deterministic instantiator MCP tool (the old `instantiate_evidence_plan` was ret
 - Artifacts land `draft`; lifecycle fields are server-controlled; `approve_artifact` is
   owner-only.
 - `handling` required for confidential / strictly_confidential artifacts.
-- Evidence requests start **queued**; nothing reaches the client until you **release**
-  (`release_wave` / `release_evidence_request` / `release_evidence_package`), and a release with
-  no assigned contact is refused.
+- An ad-hoc `create_evidence_request` lands **`pending`** and portal-visible to its assigned
+  contact at once; only a **release** (`release_evidence_request` / `release_evidence_package` /
+  `release_wave` for queued rows) sends the email, and a release with no assigned contact is
+  refused.
+- `list_evidence_requests` returns `{evidence_requests, unmatched_submissions}` — the second
+  list holds drop-zone uploads the client sent that are not yet placed on any request. Read it;
+  evidence the client already provided is easy to miss otherwise.
 - `review_evidence_request` `correction_requested` / `rejected` **require a `reason`**;
   `release_*` and `post_thread_message` are **client-facing** (portal + email).
 - `generate_evidence_requests`: OMIT `control_evaluation_ids` for all eligible, pass `[]` for

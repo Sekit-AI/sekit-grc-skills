@@ -119,7 +119,7 @@ evidenceable_id=<risk id>, kind=..., ...)`. See **manage-evidence-and-deliverabl
 ### 6. Governance (when asked)
 
 - `approve_risk` / `unapprove_risk` — **owner-only**; only when the user explicitly approves.
-- `archive_risk` / `restore_risk` — soft-delete / undo.
+- `archive_risk` / `restore_risk` — soft-delete / undo. **Owner-only**, like the approvals.
 
 ## Constraints (the validator will reject otherwise)
 

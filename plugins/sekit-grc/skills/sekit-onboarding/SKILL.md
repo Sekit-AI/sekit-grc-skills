@@ -62,15 +62,20 @@ Use this when the user wants to inspect or change real Sekit data.
 1. Read `sekit-mcp-guide` before any tool call.
 2. If the connector tools are unavailable, guide the user through the OAuth or PAT setup that
    matches their host, then stop until the connector is available.
-3. Call `whoami`. If `organization` is null, explain that the user's Sekit organization setup
-   must be completed before client work.
-4. Call `list_clients`. Never guess a `client_organization_id`.
-5. If the intended client exists, confirm the match when names are ambiguous. If it does not
+3. If every call fails with **402 `subscription_required`**, the connection is fine but the
+   firm has no active Sekit subscription or trial. Do **not** send the user back through
+   OAuth/PAT setup: tell them to activate the workspace in the Sekit console
+   (`/app/activate`, or ask their firm's owner), then retry.
+4. Call `whoami` to confirm identity, role, and firm (`organization` is always set for an
+   authenticated consultant).
+5. Call `list_clients`. Never guess a `client_organization_id`.
+6. If the intended client exists, confirm the match when names are ambiguous. If it does not
    exist, offer to create it; call `create_client` only after the user clearly agrees.
-6. Route into the specialist skill for the chosen workflow.
+7. Route into the specialist skill for the chosen workflow.
 
 For a readiness check, report only what matters: authenticated identity, organization, visible
-clients, and whether the requested first workflow can proceed. Never display or ask the user to
+clients, whether the workspace is active (no 402), and whether the requested first workflow
+can proceed. Never display or ask the user to
 paste a raw PAT into the conversation.
 
 ## Aim for first value

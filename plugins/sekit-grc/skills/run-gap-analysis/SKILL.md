@@ -81,7 +81,8 @@ consultant confirm:
 - `severity` **only when `status="gap"`** — **seeded from `guidance.severity_default`** (medium
   only when absent), presented with its provenance.
 - Remediation: `recommended_remediation` **prefilled from `guidance.remediation_template`**,
-  `estimated_effort`, `current_tier`/`target_tier` (0–4), `owner_type`, `confidence`, `notes`.
+  `estimated_effort`, `current_tier`/`target_tier` (0–4), `owner_type`
+  (`consultant`/`client_internal`/`external_specialist`), `confidence`, `notes`.
 - Evidence requests driven by `guidance.evidence_expectation`.
 
 Every guidance-derived value is a **suggestion the consultant confirms**, never a verdict (the
