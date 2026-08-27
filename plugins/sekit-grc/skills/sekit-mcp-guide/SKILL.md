@@ -84,7 +84,7 @@ The host may prefix tool names. Read-only listers/getters are safe to call freel
 |---|---|
 | **Self / firm** | `whoami`, `get_organization`, `list_team_members`, `list_pending_invitations` |
 | **Clients** | `list_clients`, `get_client`, `create_client` (onboard a new client — only `name` is required), `update_client` |
-| **Risks** | `list_risks`, `get_risk`, `create_risk`, `update_risk`, `approve_risk`, `unapprove_risk`, `archive_risk`, `restore_risk` → see **analyze-risks** |
+| **Risks** | `list_risks`, `get_risk`, `create_risk`, `update_risk`, `approve_risk`, `unapprove_risk`, `archive_risk`, `restore_risk`; per-action remediation tracking `list_risk_actions`, `create_risk_action`, `update_risk_action`, `delete_risk_action` → see **analyze-risks** |
 | **Control evaluations** | `list_control_evaluations` (pass `inbox=pending`\|`resolved` for the Bandeja agent-proposal triage lens), `get_control_evaluation`, `get_control_evaluation_activity`, `create_control_evaluation`, `update_control_evaluation`, `import_control_evaluations`, `approve_control_evaluation`, `reject_control_evaluation`, `unapprove_control_evaluation`, `revert_control_evaluation_rejection`, `archive_control_evaluation`, `restore_control_evaluation` → see **evaluate-controls** |
 | **Gap analyses** | `list_gap_analyses`, `get_gap_analysis`, `create_gap_analysis`, `update_gap_analysis`, `archive_gap_analysis`, `restore_gap_analysis` → see **run-gap-analysis** |
 | **Reference data** (read-only) | `list_frameworks`, `list_controls`, `search_controls`, `search_control_catalog`, `get_control`, `list_framework_controls`, `list_industries` |
