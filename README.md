@@ -17,7 +17,7 @@ hardcoding one standard.
 |---|---|
 | `sekit-onboarding` | Discover Sekit's capabilities, check connector readiness, and complete a safe first task |
 | `sekit-mcp-guide` | Connect the consultant MCP and use its shared operating and safety rules |
-| `analyze-risks` | Create and maintain a client's risk register |
+| `analyze-risks` | Create and maintain a client's risk register and its remediation actions |
 | `evaluate-controls` | Record evidence-based control evaluations |
 | `run-gap-analysis` | Run a framework-scoped gap analysis end to end |
 | `generate-ropa` | Draft and govern a GDPR Article 30 record of processing activities |
