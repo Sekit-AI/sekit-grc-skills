@@ -148,8 +148,8 @@ through `update_risk`'s embedded array.
   set at birth. Returns the created action with its `id`.
 - **`update_risk_action(client_organization_id, risk_id, risk_action_id, ...)`** — PATCH
   semantics: an absent key is untouched, an explicit `null` clears a nullable field
-  (`owner_asset_id`, `phase`, `target_date`, `effort`). Content (`action`, `effort`,
-  `validates_when`) is editable here too. Find `risk_action_id` on the risk's
+  (`owner_asset_id`, `phase`, `target_date`, `effort`, `validates_when`). Content (`action`,
+  `effort`, `validates_when`) is editable here too. Find `risk_action_id` on the risk's
   `recommended_actions` items or as the `id` of a `list_risk_actions` row. Returns the
   updated action.
 - **`delete_risk_action(client_organization_id, risk_id, risk_action_id)`** — hard delete;
@@ -188,9 +188,11 @@ evidenceable_id=<risk id>, kind=..., ...)`. See **manage-evidence-and-deliverabl
 - A caller-passed `external_id` must be **unique per client** — a collision is a clean
   error; pick another (or omit it and let the server number the risk).
 - `detected_date` is ISO-8601.
-- Inside `recommended_actions` only `action`, `effort`, `validates_when` (and `id` on update)
-  are accepted — `status`, `owner_asset_id`, `phase` or `target_date` there is a 422. On the
-  per-action tools the vocabularies are exact: `status` `pending|in_progress|done|dismissed`,
-  `phase` `short_term|medium_term|long_term`, `effort` `low|medium|high`, `target_date`
+- Inside `recommended_actions` only `action`, `effort`, `validates_when`, `effort_note` (and
+  `id` on update) are accepted — `status`, `owner_asset_id`, `phase` or `target_date` there
+  is a 422. Never author `effort_note` yourself, but resend the one an item already carries:
+  an omitted key clears the parked text on the stored row. On the per-action tools the
+  vocabularies are exact: `status` `pending|in_progress|done|dismissed`, `phase`
+  `short_term|medium_term|long_term`, `effort` `low|medium|high`, `target_date`
   `YYYY-MM-DD`; `owner_asset_id` is an asset reference, never a name.
 - Ground every risk in evidence that exists; drop claims you can't cite.
