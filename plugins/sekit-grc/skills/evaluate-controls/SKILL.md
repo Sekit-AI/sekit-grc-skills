@@ -73,7 +73,9 @@ finished statement a consultant would sign: what is missing and on what basis. T
 rewrite it in the console, and a re-import never overwrites an edited one.
 
 `notes` — a single actionable line when useful (a fast-win cue, a question for the consultant).
-Omit it when there is nothing to add. It is NOT the report's description; `summary` is.
+Omit it when there is nothing to add. `summary` is what the report reaches for first, but `notes`
+is its fallback: when a control has no `summary`, the finding card prints the `notes` instead. So
+never put anything there you would not want a client to read.
 
 `reasoning` — the full evidence chain. Persisted as immutable AI-provenance next to the
 evaluation, never overwritten, and shown to the consultant beside the summary they are editing.
