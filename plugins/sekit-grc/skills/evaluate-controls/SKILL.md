@@ -68,11 +68,27 @@ than implying a real assessment produced it.
 
 ## Useful optional fields
 
-`confidence` (`high`/`medium`/`low`), `notes`, `recommended_remediation`, `estimated_effort`
+`summary` — **the sentence the client-facing report prints for this control.** Write it as a
+finished statement a consultant would sign: what is missing and on what basis. The consultant can
+rewrite it in the console, and a re-import never overwrites an edited one.
+
+`notes` — a single actionable line when useful (a fast-win cue, a question for the consultant).
+Omit it when there is nothing to add. `summary` is what the report reaches for first, but `notes`
+is its fallback: when a control has no `summary`, the finding card prints the `notes` instead. So
+never put anything there you would not want a client to read.
+
+`reasoning` — the full evidence chain. Persisted as immutable AI-provenance next to the
+evaluation, never overwritten, and shown to the consultant beside the summary they are editing.
+
+`confidence` (`high`/`medium`/`low`), `recommended_remediation`, `estimated_effort`
 (`low`/`medium`/`high`), `current_tier` / `target_tier` (0–4), `owner_type`
-(`consultant`/`client_internal`/`external_specialist`), `impact_type`, `nist_function`
-(`GV`/`ID`/`PR`/`DE`/`RS`/`RC`), `gdpr_articles`, `last_reviewed_at`, `assessment_id` (must
-belong to the same client).
+(`consultant`/`client_internal`/`external_specialist`), `impact_type`, `gdpr_articles`,
+`last_reviewed_at`.
+
+`nist_function` and `assessment_id` were **retired** from control evaluations. The NIST function
+is derived from the catalog control, and every evaluation belongs to a gap analysis rather than an
+assessment. `list_controls` still filters the RCF catalog by `nist_function` — that is a different
+field on a different resource.
 
 ## Process
 
