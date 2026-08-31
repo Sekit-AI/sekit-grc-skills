@@ -1,6 +1,6 @@
 ---
 name: evaluate-controls
-description: "Record and triage control evaluations for a Sekit client over the consultant MCP. This is the mechanics of one verdict: pick the control via the three-way leg (an RCF or Sekit CSF control, a native framework control, or a custom control), set status (pass, partial, gap, unknown, or not applicable), supply an evidence source and date, add severity only when the status is a gap, and file it into a gap analysis. It also covers the Bandeja: reviewing agent-proposed evaluations in the pending inbox and approving or rejecting them. Use when the user wants to assess or score a control, mark a control as a gap or passing, evaluate posture against a framework, import control evaluations, or review / approve / reject agent proposals in the Bandeja. Framework-agnostic. Read the sekit-mcp-guide skill first."
+description: "Record and triage control evaluations for a Sekit client over the consultant MCP. This is the mechanics of one verdict: pick the control via the three-way leg (an RCF or Sekit CSF control, a native framework control, or a custom control), set status, supply an evidence source and date, add severity only when the status is a gap, and file it into a gap analysis. The same status field carries two vocabularies: on a compliance analysis it is an assessment verdict, and on a readiness analysis it is a work state (pass is Completed, partial is In progress, gap is Not started, severity and not applicable are rejected). It also covers the Bandeja: reviewing agent-proposed evaluations in the pending inbox and approving or rejecting them. Use when the user wants to assess or score a control, mark a control as a gap or passing, record how far along a certification-preparation task is, evaluate posture against a framework, import control evaluations, or review / approve / reject agent proposals in the Bandeja. Framework-agnostic. Read the sekit-mcp-guide skill first."
 ---
 
 # Evaluate controls
@@ -57,11 +57,39 @@ its provenance ("severity_default: high, authored") for the consultant to confir
 **Fall back to `medium` only when `guidance.severity_default` is absent** — and say so, rather
 than implying a real assessment produced it.
 
+## Two vocabularies: read the analysis mode first
+
+`status` means different things depending on the analysis the CE is filed into. Read
+`evaluation_mode` from `get_gap_analysis` **before** you draft a verdict — the field is on the
+gap analysis, not on the control, and it is immutable, so it is a fact about where you are
+writing, not a choice you make per row.
+
+| `status` | On a `compliance` analysis | On a `readiness` analysis |
+|---|---|---|
+| `pass` | Meets the control | **Completed** |
+| `partial` | Partially meets it | **In progress** |
+| `gap` | Does not meet it | **Not started** |
+| `unknown` | Not yet assessed | Not started (reads and counts the same as `gap`) |
+| `not_applicable` | Out of scope, with a note | **Rejected** — 422 |
+
+On a **readiness** analysis:
+
+- **Never send `severity`**, for any status. It is rejected outright, not just on non-gap rows.
+- **`not_applicable` is refused.** A management system admits no exclusion: every requirement is
+  walked, so the vocabulary does not offer the word. If the consultant wants to say "this one
+  does not apply", the honest answer is that clauses of a management system cannot be scoped out
+  — record where the work actually stands instead.
+- An untouched requirement and an explicit `gap` **display and count identically**. Recording
+  `gap` is still worth doing: it says the consultant looked.
+- The guidance-derived fields still help, but `severity_default` does not apply — there is no
+  severity to seed.
+
 ## Filing into a gap analysis
 
 - Pass **`gap_analysis_id`** (from `create_gap_analysis` / `list_gap_analyses`) to file the
   verdict into a specific analysis — its framework **must match** this CE's. The leg is fixed at
-  creation.
+  creation. The analysis also carries the **evaluation mode**, which decides which of the two
+  status vocabularies above applies to this row.
 - **Omit it** (RCF / native leg only) and Sekit attaches a **synthesized per-(client, framework)
   analysis** so every CE still belongs to one. The custom leg requires its custom-framework gap
   analysis.
@@ -93,8 +121,10 @@ field on a different resource.
 ## Process
 
 1. **Orient** — `whoami` → `list_clients` → resolve `client_organization_id`.
-2. **Pick the lens** — know the gap analysis + framework you're filing under (or let it
-   synthesize). `list_frameworks` if you need the code.
+2. **Pick the lens and read the mode** — know the gap analysis + framework you're filing
+   under (or let it synthesize). `list_frameworks` if you need the code.
+   `get_gap_analysis` returns **`evaluation_mode`**: on `readiness` the status vocabulary is
+   work states and severity is never sent (see **Two vocabularies** above).
 3. **Pull the controls** — `list_controls(framework=...)` (RCF lens, filter required) or
    `list_framework_controls(...)` (native). For native rows, **keep only `is_leaf=true`**
    before drafting — hierarchy headers are not assessable (SK-245). Read each row's
@@ -104,7 +134,8 @@ field on a different resource.
    - **Request evidence** per `guidance.evidence_expectation`; gather `evidence_source` +
      supporting evidence.
    - If it's a `gap`, seed `severity` and prefill `recommended_remediation` per the
-     **Required fields** rule above.
+     **Required fields** rule above. **On a readiness analysis, skip this step entirely** — ask
+     where the work stands (Completed / In progress / Not started) and send no severity.
    - Pick the XOR leg.
 5. **`create_control_evaluation(...)`** — one per control per gap analysis. On a 422, read the
    field-level message and fix (usually a severity-vs-status mismatch or an XOR violation).
@@ -121,6 +152,10 @@ field on a different resource.
 
 When a Sekura agent proposes control-evaluation verdicts, they queue in a review inbox
 ("Bandeja") for a human to approve or reject. To work it:
+
+**Readiness rows never appear here.** The inbox is for verdicts awaiting sign-off, and a work
+state is tracked rather than approved. They still come back from the unfiltered register, so a
+readiness walk's progress is readable over MCP the normal way.
 
 1. **`list_control_evaluations(client_organization_id, inbox="pending")`** — the pending lens:
    only the CEs an agent proposed that still await a decision. Each row is **enriched** with
@@ -145,6 +180,8 @@ and cited `source_document` first, and don't rubber-stamp a batch without the us
 ## Constraints
 
 - Exactly **one** control leg; RCF leg also needs `framework` matching the gap analysis.
+- `status` carries two vocabularies — read the analysis's `evaluation_mode` before drafting. On
+  `readiness`: never send `severity`, and `not_applicable` is refused.
 - `severity` **iff** `status="gap"`.
 - `evidence_source` is always required.
 - One CE per control per gap analysis — check `list_control_evaluations` before re-creating.
