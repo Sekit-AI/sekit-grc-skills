@@ -1,6 +1,6 @@
 ---
 name: run-gap-analysis
-description: "Run a full Sekit gap analysis end to end over the consultant MCP. Create the framework-scoped analysis container (the framework lens is immutable), build the worklist of controls, triage each one into a control evaluation with remediation, effort, and severity, track progress with proportional scope, and mark it complete. Use when the user wants to start or run a gap analysis, assess a client against ISO 27001, NIST CSF, Sekit CSF, or any framework, do compliance or certification readiness, or work a control worklist for a client. Framework-agnostic. Read the sekit-mcp-guide skill first."
+description: "Run a full Sekit gap analysis end to end over the consultant MCP. Create the framework-scoped analysis container (the framework lens and the evaluation mode are both immutable), build the worklist of controls, triage each one into a control evaluation, track progress with proportional scope, and mark it complete. Covers both modes: compliance, which records the five assessment verdicts with severity and remediation, and readiness, a certification-preparation walk that records how far along the work is in three work states. Use when the user wants to start or run a gap analysis, assess a client against ISO 27001, NIST CSF, Sekit CSF, or any framework, prepare a client for certification, or work a control worklist. Framework-agnostic. Read the sekit-mcp-guide skill first."
 ---
 
 # Run a gap analysis
@@ -11,8 +11,10 @@ evidenced gap analysis. Read **sekit-mcp-guide** first. The per-control verdict 
 
 ## When to use
 
-The user wants to assess a client against a framework (certification readiness, a compliance
-gap, a posture baseline) and work the whole control set, not just one control.
+The user wants to assess a client against a framework (a compliance gap, a posture baseline)
+and work the whole control set, not just one control — or wants to prepare a client for
+certification, walking every requirement of a management system to record how far along the
+work is. Those are the two **evaluation modes**, and you choose between them in step 2.
 
 ## The model
 
@@ -36,18 +38,48 @@ from. Pick a coarse-crosswalk standard natively only when the
 engagement is tied to it (e.g. `iso_27001` certification) — and warn the consultant up front that
 its guidance is sparse (mostly `null` / `projected`), so most fields will be theirs to fill.
 
+**If the engagement is certification preparation, decide the mode here, not in step 2.** The
+`sekit_csf` default below does not accept a readiness walk, so a lens picked on the "no specific
+mandate" rule and a readiness mode chosen a moment later cannot both stand. Pick the framework
+being certified against.
+
 ### 2. Create the analysis container
 
 ```
 create_gap_analysis(
   client_organization_id = <id>,
-  reason = "<engagement context, e.g. 'ISO 27001 certification readiness'>",
-  framework = "sekit_csf"   # XOR: OR framework_id, OR custom_framework_id — exactly one
+  reason = "<the analysis NAME, max 160 chars, e.g. 'ISO 27001 certification readiness'>",
+  framework = "sekit_csf",         # XOR: OR framework_id, OR custom_framework_id — exactly one
+  evaluation_mode = "compliance"   # or "readiness" — optional, defaults to compliance
 )
 ```
 
-The lens is **immutable** after creation. `status` defaults to `in_progress`. Note the returned
-`gap_analysis_id`.
+The lens **and the mode** are **immutable** after creation. `status` defaults to `in_progress`.
+Note the returned `gap_analysis_id`.
+
+**Choosing the mode.** This is the decision that cannot be undone, so make it deliberately and
+say out loud which one you picked:
+
+- **`compliance`** (the default) — the five assessment verdicts. How well does the client meet
+  each control? Produces severities, remediation and the gap report. This is the rest of this
+  skill.
+- **`readiness`** — a certification-preparation walk. Every requirement is worked through rather
+  than judged, and the verdict records **how far along the work is**, not how well it complies:
+  `pass` = Completed, `partial` = In progress, `gap` = Not started. Severity and
+  `not_applicable` are rejected outright. Pick it when the engagement is "get this client ready
+  to certify", not "score this client".
+
+Two refusals to know before you offer readiness, both clean 422s that name the reason:
+
+- **Not on the legacy `sekit_csf` lens.** That framework has no readiness worklist. Start the
+  walk on the framework being certified against, or on a custom framework.
+- **Not on frameworks larger than 120 requirements** (PCI DSS, NIST 800-53, CSA CCM, CIS). The
+  readiness walk is for management-system requirement sets; a technical control catalog of that
+  size wants a compliance gap analysis instead.
+
+If the consultant asks for a readiness walk on a lens that refuses it, say so **before**
+creating anything — the mode cannot be changed afterwards, so a wrong choice here costs them
+the whole analysis.
 
 (If one already exists, `list_gap_analyses(client_organization_id)` / `get_gap_analysis` to reuse
 it instead of creating a duplicate.)
@@ -70,7 +102,17 @@ Pull the controls for the lens:
 Mark clearly out-of-scope controls `not_applicable` (with a note) rather than leaving them
 blank, so coverage is honest. State the scope to the user before bulk writes.
 
+**Proportional scope does not apply to a readiness walk.** A management system admits no
+exclusion, so the checklist is walked whole: every requirement ends with a state, even if they
+all end at *Not started*. `not_applicable` is rejected there for exactly that reason.
+
 ### 4. Triage each control → a control evaluation
+
+**On a readiness analysis this whole section reads differently.** The fields below are the
+compliance vocabulary. A readiness walk records one of three work states per requirement and
+never carries severity, remediation severity seeding, or `not_applicable` — see
+**evaluate-controls**, which holds both vocabularies side by side. Read `evaluation_mode` from
+`get_gap_analysis` before you draft anything, so you write the right one.
 
 For each in-scope control, `create_control_evaluation(..., gap_analysis_id=<this analysis>)` —
 its framework must match the lens. Draft each CE from the control's `guidance`, then have the
@@ -102,6 +144,14 @@ gap distribution. Surface the gaps (especially `critical`/`high`) and the remedi
 the user. Optionally write the narrative to the client wiki (**manage-knowledge-base**) or
 generate a deliverable (**manage-evidence-and-deliverables**).
 
+Readiness rows come back from the same call, so the walk's progress is readable over MCP the
+same way. They never appear in the Bandeja: readiness work is tracked, not signed off.
+
+**The reports themselves are generated in the Sekit console, not over MCP.** No tool in the
+consultant server produces a gap report or a readiness plan. When the walk is done, tell the
+consultant to open the analysis in the console and press Generate report — over a readiness
+analysis that produces the certification-readiness plan, the document they hand the client.
+
 ### 7. Complete
 
 When triage is done, `update_gap_analysis(client_organization_id, gap_analysis_id, status=
@@ -116,7 +166,9 @@ control granularity.
 
 ## Constraints
 
-- Framework lens is set once and **immutable** — choose deliberately.
+- Framework lens **and evaluation mode** are set once and **immutable** — choose both
+  deliberately; there is no conversion between a compliance analysis and a readiness walk.
+- Readiness is refused on the `sekit_csf` lens and on frameworks over 120 requirements.
 - CE framework must match the analysis lens; severity iff gap; one CE per control per analysis
   (see evaluate-controls).
 - `archive_gap_analysis` / `restore_gap_analysis` for soft-delete / undo.

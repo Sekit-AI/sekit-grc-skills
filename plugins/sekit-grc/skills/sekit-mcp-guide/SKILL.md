@@ -325,6 +325,7 @@ These tools mutate a live consultant platform. Before any **create / update / ap
 | Build or update a client's risk register | **analyze-risks** |
 | Record a single control verdict (the XOR-leg mechanics) | **evaluate-controls** |
 | Run a full gap analysis end-to-end (container → worklist → complete) | **run-gap-analysis** |
+| Prepare a client for certification: walk every requirement in three work states | **run-gap-analysis** (`evaluation_mode="readiness"`) |
 | Draft and deliver a GDPR Art. 30 ROPA (RAT / record of processing activities) | **generate-ropa** |
 | Read/write the per-client knowledge base (wiki) | **manage-knowledge-base** |
 | Attach evidence, upload files, manage + approve deliverables | **manage-evidence-and-deliverables** |
