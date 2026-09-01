@@ -1,4 +1,4 @@
-import { mkdirSync, existsSync, readdirSync, statSync, rmSync } from 'node:fs';
+import { mkdirSync, existsSync, readdirSync, readFileSync, statSync, rmSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
@@ -11,6 +11,72 @@ import { execFileSync } from 'node:child_process';
 // Uses the system `zip` (present on macOS + Linux) instead of an npm archiver
 // dependency, so this tool stays dependency-free inside the monorepo: no
 // node_modules, no lockfile, nothing for pnpm/CI to resolve.
+
+// The Agent Skills spec (https://agentskills.io/specification) caps `name` at 64
+// characters and `description` at 1024. ChatGPT's skill uploader enforces both and
+// rejects the whole archive with "SKILL.md front matter 'description' must be
+// 1-1024 characters long", so an over-long description does not fail at authoring
+// time — it fails in the user's browser after a release. Validate here, in the tool
+// that produces the artifact, so an invalid skill can never be packaged at all.
+const NAME_MAX = 64;
+const DESCRIPTION_MAX = 1024;
+const NAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+// Minimal frontmatter reader: enough for `key: value` and `key: "json string"`,
+// which is the shape every SKILL.md in this repo uses. Deliberately not a YAML
+// parser — this repo stays dependency-free (see the note above).
+function readFrontmatter(skillMdPath) {
+  const source = readFileSync(skillMdPath, 'utf8');
+  const block = source.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
+  if (!block) return null;
+  const fields = {};
+  for (const line of block[1].split('\n')) {
+    const field = line.match(/^([A-Za-z][\w-]*):[ \t]*(.*)$/);
+    if (!field) continue;
+    const [, key, rawValue] = field;
+    let value = rawValue.trim();
+    if (value.startsWith('"')) {
+      try {
+        value = JSON.parse(value);
+      } catch {
+        // Leave the raw text; the length check below still reports something useful.
+      }
+    }
+    fields[key] = value;
+  }
+  return fields;
+}
+
+function validateSkill(skillName, skillDir) {
+  const problems = [];
+  const skillMd = join(skillDir, 'SKILL.md');
+  if (!existsSync(skillMd)) return [`${skillName}: no SKILL.md`];
+
+  const fields = readFrontmatter(skillMd);
+  if (!fields) return [`${skillName}: SKILL.md must open with a YAML frontmatter block`];
+
+  const { name, description } = fields;
+  if (!name) problems.push(`${skillName}: frontmatter is missing \`name\``);
+  else {
+    if (name !== skillName)
+      problems.push(`${skillName}: frontmatter name "${name}" must match the directory name`);
+    if (name.length > NAME_MAX)
+      problems.push(`${skillName}: name is ${name.length} characters (max ${NAME_MAX})`);
+    if (!NAME_PATTERN.test(name))
+      problems.push(
+        `${skillName}: name "${name}" must be lowercase alphanumerics and single hyphens`,
+      );
+  }
+
+  if (!description) problems.push(`${skillName}: frontmatter is missing \`description\``);
+  else if (description.length > DESCRIPTION_MAX)
+    problems.push(
+      `${skillName}: description is ${description.length} characters (max ${DESCRIPTION_MAX}) ` +
+        `— ChatGPT rejects the upload; trim ${description.length - DESCRIPTION_MAX} characters`,
+    );
+
+  return problems;
+}
 
 const repoRoot = resolve(process.argv[2] ?? process.cwd());
 const dist = join(repoRoot, 'dist');
@@ -44,6 +110,21 @@ for (const name of plugins) {
   if (!entries.includes('.claude-plugin')) {
     console.error(`Skipping ${name}: no .claude-plugin/plugin.json`);
     continue;
+  }
+
+  // Validate every skill BEFORE writing any archive, so a spec violation fails the
+  // build instead of shipping an artifact that a host rejects on upload.
+  const skillsSource = join(pluginDir, 'skills');
+  if (existsSync(skillsSource)) {
+    const problems = readdirSync(skillsSource)
+      .filter((skillName) => statSync(join(skillsSource, skillName)).isDirectory())
+      .sort()
+      .flatMap((skillName) => validateSkill(skillName, join(skillsSource, skillName)));
+    if (problems.length > 0) {
+      console.error(`Invalid skill frontmatter in ${name}:`);
+      for (const problem of problems) console.error(`  - ${problem}`);
+      process.exit(1);
+    }
   }
 
   // `-r` recurse, `-X` drop extra file attributes, `-q` quiet. `cwd` rooting puts

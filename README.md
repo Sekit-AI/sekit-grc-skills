@@ -82,10 +82,14 @@ when someone only needs the skills:
 
 1. Download the `.skill` files from the latest
    [GitHub release](https://github.com/Sekit-AI/sekit-grc-skills/releases). The
-   `sekit-grc-skills.zip` asset contains all nine files for convenient download; unzip it first.
-2. In ChatGPT, open **Upload a skill** and upload each `.skill` file you want. For the guided
-   starting experience, upload `sekit-mcp-guide.skill` and `sekit-onboarding.skill`. Upload all
-   nine for the complete workflow set.
+   `sekit-grc-skills.zip` asset holds all nine of them so you can grab them in one download.
+   **Unzip it first — that bundle is not itself a skill.** ChatGPT accepts one skill per
+   archive, so uploading the bundle fails with `Archive must include at least one SKILL.md
+   file at the skill root`.
+2. In ChatGPT, open **Upload a skill** and upload the individual `.skill` files you want; the
+   picker takes several at once. For the guided starting experience, upload
+   `sekit-mcp-guide.skill` and `sekit-onboarding.skill`. Upload all nine for the complete
+   workflow set.
 3. Authorize the declared Sekit MCP connection when ChatGPT prompts you, then start a new chat and
    invoke a skill with `@`, for example `@sekit-onboarding`.
 

@@ -1,7 +1,16 @@
 import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname, relative, resolve } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
@@ -116,8 +125,17 @@ test('every skill has portable, valid frontmatter', () => {
     assert.equal(lines[0], `name: ${skillName}`);
     assert.match(lines[1], /^description: ".*"$/);
 
+    assert.ok(skillName.length <= 64, `${skillName}: name must be at most 64 characters`);
+    assert.match(skillName, /^[a-z0-9]+(?:-[a-z0-9]+)*$/, `${skillName}: name must be kebab-case`);
+
     const description = JSON.parse(lines[1].slice('description: '.length));
-    assert.ok(description.length > 20 && description.length <= 2048);
+    // 1024 is the Agent Skills spec ceiling (https://agentskills.io/specification) and
+    // the limit ChatGPT's uploader enforces. A looser bound here let a 1071-character
+    // description reach a release, where it failed in the user's browser instead.
+    assert.ok(
+      description.length > 20 && description.length <= 1024,
+      `${skillName}: description is ${description.length} characters (must be 21-1024)`,
+    );
     assert.match(description, /^[\x20-\x7E]+$/, `${skillName} description must be plain ASCII`);
     assert.ok(!description.includes('`'), `${skillName} description must not contain backticks`);
     assert.ok(source.slice(frontmatter[0].length).trim().length > 0);
@@ -193,6 +211,47 @@ test('ChatGPT direct-upload skill archives are valid and source-exact', () => {
     const standalone = readFileSync(resolve(skillDist, archive));
     assert.deepEqual(bundled, standalone, `${archive} differs inside the convenience bundle`);
   }
+});
+
+test('the build refuses to package a skill that violates the frontmatter spec', () => {
+  const buildScript = resolve(root, 'scripts/build-plugins.mjs');
+
+  // A throwaway plugin tree, so the guard is exercised against a real violation
+  // rather than asserted in the abstract. Same shape the real plugin has.
+  function fixture(description) {
+    const dir = mkdtempSync(join(tmpdir(), 'sekit-grc-build-'));
+    const skillDir = resolve(dir, 'plugins/probe/skills/probe-skill');
+    mkdirSync(skillDir, { recursive: true });
+    mkdirSync(resolve(dir, 'plugins/probe/.claude-plugin'), { recursive: true });
+    writeFileSync(
+      resolve(dir, 'plugins/probe/.claude-plugin/plugin.json'),
+      JSON.stringify({ name: 'probe', version: '0.0.0', description: 'probe' }),
+    );
+    writeFileSync(
+      resolve(skillDir, 'SKILL.md'),
+      `---\nname: probe-skill\ndescription: ${JSON.stringify(description)}\n---\n\nBody.\n`,
+    );
+    return dir;
+  }
+
+  function build(dir) {
+    try {
+      execFileSync('node', [buildScript, dir], { encoding: 'utf8', stdio: 'pipe' });
+      return { status: 0, stderr: '' };
+    } catch (error) {
+      return { status: error.status, stderr: String(error.stderr ?? '') };
+    }
+  }
+
+  // Positive control: a compliant skill of the same shape builds cleanly, so a
+  // failure below is the length rule and not the fixture.
+  const good = build(fixture('A'.repeat(1024)));
+  assert.equal(good.status, 0, `a 1024-character description must build: ${good.stderr}`);
+
+  const tooLong = build(fixture('A'.repeat(1025)));
+  assert.equal(tooLong.status, 1, 'a 1025-character description must fail the build');
+  assert.match(tooLong.stderr, /probe-skill: description is 1025 characters \(max 1024\)/);
+
 });
 
 test('release and security metadata work in their standard consumer flows', () => {
