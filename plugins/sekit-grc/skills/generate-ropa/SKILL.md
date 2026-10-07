@@ -34,11 +34,12 @@ Start from what Sekit already knows, then ask the client only for what's missing
 
 **Missing facts → ask the client, don't guess:**
 
-1. **Preferred: a collection session.** When a GDPR gap analysis exists, have the consultant
-   start a collection session from it in the Sekit console (**Collect evidence**); the client
-   answers in their portal with Sekura. No consultant MCP tool starts a session.
-2. **Otherwise, one evidence request per topic** with `create_evidence_request`, linked to the
-   client contact (`client_contact_id`) and, when a GDPR gap analysis exists, to its 30.1
+1. **Existing documents → a collection session.** A session started from a GDPR gap analysis
+   in the Sekit console (**Collect evidence**) asks the client for the evidence its
+   evaluations still need. It does not ask for the per-activity facts below, and no consultant
+   MCP tool starts one.
+2. **Per-activity facts → one evidence request per topic** with `create_evidence_request`,
+   linked to the client contact (`client_contact_id`) and, when a GDPR gap analysis exists, to its 30.1
    control evaluation (`control_evaluation_id`) so the answer lands as evidence where the gap
    is. Ask, per activity: purpose; categories of people and of data (flag special
    categories); who receives the data (processors, third parties); transfers outside the EU
