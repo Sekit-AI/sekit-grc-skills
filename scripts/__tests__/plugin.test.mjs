@@ -178,6 +178,40 @@ test('analyze-risks writes risk statements, not copied gap labels (SK-736)', () 
   assert.match(summary[0], /\*\*analyze-risks\*\*/, 'the summary field points at the risk-statement contrast');
 });
 
+test('skills name package and thread tools only to deprecate them (SK-584)', () => {
+  const deprecated = [
+    'list_evidence_packages',
+    'get_evidence_package',
+    'create_evidence_package',
+    'update_evidence_package',
+    'release_evidence_package',
+    'close_evidence_package',
+    'reopen_evidence_package',
+    'set_evidence_request_package',
+    'post_thread_message',
+    'list_thread',
+  ];
+  const tool = new RegExp(`\\b(?:${deprecated.join('|')})\\b`, 'g');
+  const warning = /deprecated|do not call|never call/i;
+
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+  const section = guide.match(/\n### Deprecated: packages and threads\n([\s\S]*?)(?=\n#{1,3} |$)/);
+  assert.ok(section, 'sekit-mcp-guide must carry the deprecation section');
+  for (const name of deprecated) assert.ok(section[1].includes(`\`${name}\``), `${name} must be listed as deprecated`);
+
+  for (const skillName of readdirSync(skillsRoot)) {
+    const source = readFileSync(resolve(skillsRoot, skillName, 'SKILL.md'), 'utf8');
+    // A table row stands alone; any other block runs to the next blank line.
+    const blocks = source.split(/\n\s*\n/).flatMap((block) =>
+      block.trimStart().startsWith('|') ? block.split('\n') : [block],
+    );
+    for (const block of blocks) {
+      const names = block.match(tool);
+      if (names) assert.match(block, warning, `${skillName} names ${names.join(', ')} outside a deprecation note`);
+    }
+  }
+});
+
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
   assert.ok(existsSync(artifact), 'npm test must build dist/sekit-grc.plugin first');
   assert.doesNotThrow(() => execFileSync('unzip', ['-tq', artifact], { stdio: 'pipe' }));

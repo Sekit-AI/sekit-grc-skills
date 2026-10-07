@@ -35,7 +35,7 @@ Expand only the capability area relevant to the user's goal:
 | Understand a client | Build reusable context in the client wiki and inventory people, vendors, and systems | `manage-knowledge-base`, `manage-assets` |
 | Assess posture or a standard | Scope a framework, evaluate assessable controls, record gaps, and use the crosswalk | `run-gap-analysis`, `evaluate-controls` |
 | Manage risk | Build and maintain a risk register with likelihood, impact, ownership, and evidence | `analyze-risks` |
-| Collect proof from a client | Organize evidence requests into paced packages, review submissions, and link accepted evidence | `manage-evidence-and-deliverables` |
+| Collect proof from a client | Start a collection session or send evidence requests, review submissions, and link accepted evidence | `manage-evidence-and-deliverables` |
 | Produce client work | Upload, review, approve, supersede, and archive governed deliverables | `manage-evidence-and-deliverables` |
 | Prepare a GDPR ROPA | Gather processing activities and produce a governed Article 30 record | `generate-ropa` |
 
@@ -87,7 +87,7 @@ Recommend one small, reversible outcome instead of launching a whole engagement:
   requests with read-only calls.
 - **Framework-led engagement:** list available frameworks and compare guidance coverage before
   creating a gap analysis.
-- **Evidence collection:** inspect queued requests and packages before releasing anything.
+- **Evidence collection:** inspect pending and queued requests before releasing anything.
 - **ROPA:** confirm the client and source material before drafting processing activities.
 
 After the first outcome, recap what was learned or created and offer the next specialist

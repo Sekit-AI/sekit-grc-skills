@@ -91,8 +91,9 @@ The host may prefix tool names. Read-only listers/getters are safe to call freel
 | **Custom library** (org-authored frameworks + controls) | `list_custom_frameworks`, `get_custom_framework`, `create_custom_framework`, `update_custom_framework`, `archive_custom_framework`, `restore_custom_framework`, `list_custom_controls`, `get_custom_control`, `create_custom_control`, `update_custom_control`, `archive_custom_control`, `restore_custom_control`, `add_framework_member`, `update_framework_member`, `remove_framework_member` |
 | **Evidence** | `list_evidence`, `get_evidence`, `create_evidence`, `update_evidence`, `archive_evidence`, `restore_evidence` → see **manage-evidence-and-deliverables** |
 | **Evidence requests (solicitudes)** | `list_evidence_requests`, `get_evidence_request`, `get_submission_markdown`, `create_evidence_request`, `update_evidence_request`, `review_evidence_request`, `release_evidence_request` (client-facing), `archive_evidence_request`, `restore_evidence_request` → see **manage-evidence-and-deliverables** |
-| **Evidence packages + threads** | `list_evidence_packages`, `get_evidence_package`, `create_evidence_package`, `update_evidence_package`, `release_evidence_package` (client-facing), `close_evidence_package`, `reopen_evidence_package`, `set_evidence_request_package`, `release_wave` (client-facing), `post_thread_message` (client-facing), `list_thread` → see **manage-evidence-and-deliverables** |
-| **Evidence request generation** (deterministic, no AI) | `generate_evidence_requests` → see **manage-evidence-and-deliverables** (full PLAN generation is AI-only via the console strategist) |
+| **Evidence request pacing** | `release_wave` (client-facing) → see **manage-evidence-and-deliverables** |
+| **Deprecated — do not call** (packages + threads) | `list_evidence_packages`, `get_evidence_package`, `create_evidence_package`, `update_evidence_package`, `release_evidence_package`, `close_evidence_package`, `reopen_evidence_package`, `set_evidence_request_package`, `post_thread_message`, `list_thread` → see **Deprecated: packages and threads** below |
+| **Evidence request generation** (deterministic, no AI) | `generate_evidence_requests` → see **manage-evidence-and-deliverables** |
 | **Artifacts / deliverables** | `list_artifacts`, `get_artifact`, `prepare_artifact_upload`, `create_artifact_from_upload`, `update_artifact`, `approve_artifact`, `revert_artifact_approval`, `archive_artifact`, `restore_artifact` → see **manage-evidence-and-deliverables** |
 | **Client files** | `list_client_files`, `get_client_file`, `get_client_file_markdown`, `download_client_file`, `prepare_client_file_upload`, `create_client_file_from_upload`, `update_client_file`, `archive_client_file`, `restore_client_file` |
 | **Assets / inventory** | `list_assets`, `get_asset`, `create_asset`, `update_asset`, `archive_asset`, `restore_asset`, `list_asset_links`, `create_asset_link`, `archive_asset_link`, `restore_asset_link` → see **manage-assets** |
@@ -177,16 +178,20 @@ computed — fall back to `sekit_csf`). Only run a coarse-crosswalk
 framework natively when the engagement is tied to that standard, and tell the consultant up front
 that its guidance will be sparse (mostly `null` / `projected`) so most fields are theirs to fill.
 
-## Solicitudes y paquetes (collection workflow)
+## Solicitudes (collection workflow)
 
-**Evidence requests** ("solicitudes") are how you ask a client to hand over proof — upload a
-document (`kind="upload_evidence"`) or confirm a task is done (`kind="confirm_task"`). Their
-lifecycle spans your side and the client's portal:
+**Collect evidence with a collection session.** In the Sekit console, open the client's gap
+analysis and use **Collect evidence**: it starts a collection session (Solicitud) for that one
+analysis, and the client answers in their portal with Sekura. There is no consultant MCP tool
+that starts a session; send the consultant to the console for it.
+
+**Evidence requests** ("solicitudes") are the older per-ask records: upload a document
+(`kind="upload_evidence"`) or confirm a task is done (`kind="confirm_task"`). Their lifecycle
+spans your side and the client's portal:
 
 1. **Create** a request (`create_evidence_request`; `kind` + `title` required) — it lands
-   **`pending`** with **no package and no email**. The portal renders asks **by package**: a
-   standalone request is shown nowhere until `set_evidence_request_package` puts it in a
-   package the client can see (the released active package or the standing «Otros»).
+   **`pending`** with **no email**. The portal does not list a standalone request, so prefer a
+   collection session when the client needs to see the ask in the portal.
    Requests that `generate_evidence_requests` creates from a gap analysis
    are different: the first wave (`wave_size`, default 8) is released **and emailed by the
    generation call itself**, and the rest start `queued` until `release_wave` promotes them.
@@ -203,38 +208,27 @@ lifecycle spans your side and the client's portal:
    **requires a non-blank `reason` (shown to the client)**; `accepted` does not.
 5. `archive_evidence_request` / `restore_evidence_request` soft-delete / undo (owner-only).
 
-**Packages** are the pacing unit: a themed bundle of requests released one package at a time.
-Requests instantiated from a package start `queued` inside it; ad-hoc and generated requests
-are created standalone and join a package only through `set_evidence_request_package`.
-`release_evidence_package` promotes and emails the package's **queued** members — a member
-that is already `pending` is not re-notified by it; release that one with
-`release_evidence_request`.
-`create_evidence_package` (born `draft`), `update_evidence_package` (rename / set assignee +
-due date), then drive the `draft → released → complete | closed` lifecycle:
-`release_evidence_package` (**client-facing** — flips draft→released so the package becomes
-the client's active one and its asks appear on the portal; emails the contacts of its queued
-members), `close_evidence_package` (end a package early — cancels
-open asks), `reopen_evidence_package` (revisit a finished/closed package). Move an ask between
-packages or re-order it with `set_evidence_request_package(client_organization_id,
-evidence_request_id, package_id, position)`.
+**The client-facing tools** — `release_evidence_request` and `release_wave` — **reach the
+client** (portal visibility + email). Treat each as an egress action: confirm the client,
+contact, and content before firing, exactly like an approve/archive (see Safety).
 
-**Threads** are the multiplayer conversation. `post_thread_message` is **client-facing** —
-pass `evidence_request_id` to post on that request's thread (the client sees it in their
-portal), or omit it to post to the client-level general thread. `list_thread` reads the
-interleaved timeline (messages + lifecycle events).
-
-**The client-facing tools** — `release_evidence_request`, `release_evidence_package`,
-`release_wave`, and `post_thread_message` — **reach the client** (portal visibility + email).
-Treat every one as an egress action: confirm the client, contact, and content before firing,
-exactly like an approve/archive (see Safety).
-
-**Deterministic request generation (no AI):** the full evidence PLAN (themed draft packages) is
-AI-only — the Sekura strategist owns it from the console («Preparar plan con Sekura»); the old
-`instantiate_evidence_plan` tool was retired 2026-07-20. To turn a completed gap analysis's
-eligible control evaluations into pending requests, use `generate_evidence_requests` (tune with
+**Deterministic request generation (no AI):** to turn a completed gap analysis's eligible
+control evaluations into pending requests, use `generate_evidence_requests` (tune with
 `wave_size` / `due_date` / `client_contact_id` / `assignee_asset_id`, and `control_evaluation_ids`
-to curate WHICH controls — **omit it for all eligible, pass `[]` for none**). See
+to curate WHICH controls — **omit it for all eligible, pass `[]` for none**). The old
+`instantiate_evidence_plan` tool was retired 2026-07-20. See
 **manage-evidence-and-deliverables** for the full operating guide.
+
+### Deprecated: packages and threads
+
+Evidence packages and request threads are deprecated as of plugin v0.10.0 and are being
+removed from Sekit. The tools may still appear on the connector, but **do not call them** and
+do not suggest them to the consultant: `list_evidence_packages`, `get_evidence_package`,
+`create_evidence_package`, `update_evidence_package`, `release_evidence_package`,
+`close_evidence_package`, `reopen_evidence_package`, `set_evidence_request_package`,
+`post_thread_message`, and `list_thread`. Collect evidence with a collection session instead.
+To tell the client what is wrong with a submission, use the `reason` on a
+`correction_requested` or `rejected` verdict.
 
 ### Bandeja triage — reviewing agent proposals
 
