@@ -32,26 +32,27 @@ Start from what Sekit already knows, then ask the client only for what's missing
 - `list_framework_controls(framework_code="gdpr")` — the 30.1/30.2 requirement text to quote
   when explaining the obligation to the client.
 
-**Missing facts → ask the client via a solicitud, don't guess:**
+**Missing facts → ask the client, don't guess:**
 
-1. `create_evidence_package` — one package, e.g. "ROPA — información de tratamientos".
-2. `create_evidence_request` per topic, linked to the client contact
-   (`client_contact_id`) and, when a GDPR gap analysis exists, to its 30.1 control evaluation
-   (`control_evaluation_id`) so the answer lands as evidence where the gap is. Ask, per
-   activity: purpose; categories of people and of data (flag special categories); who receives
-   the data (processors, third parties); transfers outside the EU and under what safeguard;
-   how long data is kept; the security measures that protect it.
-3. **`set_evidence_request_package(client_organization_id, evidence_request_id, package_id,
-   position)` for EACH request** — requests are created standalone (`package_id` empty) and
-   membership is explicit; releasing a package only delivers its OWN members, and releasing an
-   empty package "succeeds" while the client receives nothing.
-4. **Release the package, then notify the client with `release_evidence_request` for EACH
-   request.** The portal renders asks by package: `release_evidence_package` flips the package
-   to `released` so it becomes the client's active package and your ad-hoc requests (already
-   `pending`) appear on the portal — but it only emails a package's **queued** members, so on a
-   package built from ad-hoc requests it sends nothing. The per-request release is
-   what puts the email in the client's inbox.
-5. Read replies with `get_submission_markdown`; follow up with `post_thread_message`.
+1. **Preferred: a collection session.** When a GDPR gap analysis exists, have the consultant
+   start a collection session from it in the Sekit console (**Collect evidence**); the client
+   answers in their portal with Sekura. No consultant MCP tool starts a session.
+2. **Otherwise, one evidence request per topic** with `create_evidence_request`, linked to the
+   client contact (`client_contact_id`) and, when a GDPR gap analysis exists, to its 30.1
+   control evaluation (`control_evaluation_id`) so the answer lands as evidence where the gap
+   is. Ask, per activity: purpose; categories of people and of data (flag special
+   categories); who receives the data (processors, third parties); transfers outside the EU
+   and under what safeguard; how long data is kept; the security measures that protect it.
+3. **Send each request with `release_evidence_request`** (CLIENT-FACING: it emails the contact
+   a magic link). Confirm the contact and the wording with the consultant first. A new request
+   sends nothing until released.
+4. Read replies with `get_evidence_request` and `get_submission_markdown`. When an answer is
+   incomplete, record a `correction_requested` verdict with `review_evidence_request`; its
+   `reason` tells the client what is missing.
+
+Do not use evidence packages or request threads (`create_evidence_package`,
+`set_evidence_request_package`, `release_evidence_package`, `post_thread_message`, and the rest):
+they are deprecated and being removed (see sekit-mcp-guide).
 
 ## 2. DRAFT
 
@@ -119,5 +120,6 @@ Drafting rules:
 - Facts come from the client or from Sekit records; unconfirmed cells are `OPEN:` items.
 - Controller vs processor role decides 30(1) vs 30(2); both sections when both roles apply.
 - `classification="confidential"` ⇒ `handling` required on the artifact.
-- Solicitudes are invisible until the package/request is released; replies land as submissions.
+- A new evidence request reaches the client only once released; replies land as submissions.
+- Never call the deprecated package or thread tools.
 - Approval only when the user says so; new versions supersede, they don't overwrite.
