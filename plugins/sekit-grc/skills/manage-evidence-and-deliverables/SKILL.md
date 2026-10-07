@@ -118,24 +118,17 @@ Several tools here **reach the client** (portal visibility + email) — they are
 **CLIENT-FACING** below and must be treated as egress: confirm the client, the assigned
 contact, and the content before firing.
 
-> **Packages and threads are deprecated.** Do not call `list_evidence_packages`,
-> `get_evidence_package`, `create_evidence_package`, `update_evidence_package`,
-> `release_evidence_package`, `close_evidence_package`, `reopen_evidence_package`,
-> `set_evidence_request_package`, `post_thread_message`, or `list_thread`, even if the
-> connector still lists them. They are being removed from Sekit (see sekit-mcp-guide).
-
 ### Which way to ask
 
 - **Collect evidence for an analysis →** a **collection session** (Solicitud). The consultant
   starts it in the Sekit console from the gap analysis (**Collect evidence**); the client then
   answers in their portal with Sekura. No consultant MCP tool starts a session, so point the
   consultant to the console.
-- **One-off ask →** `create_evidence_request`. Use it for an ad-hoc "please upload X" or
-  "confirm you did Y". `kind` is `upload_evidence` (a document) or `confirm_task` (a
-  done-check); `title` is required. It lands **`pending`** (there is no draft state) with **no
-  email**, and the portal does not list a standalone request; `release_evidence_request`
-  emails the assigned contact a magic link. Optionally link it to a
-  control evaluation or gap analysis (`control_evaluation_id` / `gap_analysis_id`,
+- **One-off ask →** `create_evidence_request`. Use it for an ad-hoc "please upload X".
+  `kind` is `upload_evidence` (a document); `title` is required. It lands **`pending`**
+  (there is no draft state) with **no email**, and the portal does not list a standalone
+  request; `release_evidence_request` emails the assigned contact a magic link. Optionally
+  link it to a control evaluation or gap analysis (`control_evaluation_id` / `gap_analysis_id`,
   same-client), assign a contact, or set a due date. Edit later with `update_evidence_request`
   (title, instructions, due date, contact, or a legal `status` move).
 - **Requests for a whole analysis, without a session →** `generate_evidence_requests` (see
@@ -145,10 +138,8 @@ contact, and the content before firing.
 ### Releasing (CLIENT-FACING)
 
 An ad-hoc request sends no email until you **release** it. Other paths email the client on
-their own, so never promise silence beyond that request: `generate_evidence_requests` emails
-its first wave inside the generation call; the scheduled nudge sweep sends reminders; and
-until packages are removed from Sekit, a `review_evidence_request` verdict on a request in an
-older package can still email the package's next queued asks.
+their own, so never promise silence beyond the requests you release. For one,
+`generate_evidence_requests` emails its first wave inside the generation call.
 The release tools, by what they act on:
 
 - **`release_evidence_request`** (CLIENT-FACING) — «Enviar al cliente» for ONE request that is
@@ -174,10 +165,9 @@ verdict with **`review_evidence_request`**:
 - **`correction_requested` / `rejected` REQUIRE a non-blank `reason`** (shown to the client);
   `accepted` does not. The verdict must be a legal transition from the request's current status.
 
-The verdict `reason` is how you tell the client what to fix; do not use the deprecated thread
-tools. Once a submission is accepted, close the loop back to section A:
-attach it as evidence with `create_evidence(kind="client_file", ...)` so the verdict it backs
-is provable.
+The verdict `reason` is how you tell the client what to fix. Once a submission is accepted,
+close the loop back to section A: attach it as evidence with
+`create_evidence(kind="client_file", ...)` so the verdict it backs is provable.
 
 `archive_evidence_request` / `restore_evidence_request` soft-delete / undo (owner-only).
 
@@ -207,7 +197,6 @@ is the deterministic per-control request generator:
 - An ad-hoc `create_evidence_request` lands **`pending`** and is not listed in the portal; its
   email goes out only when you `release_evidence_request` it (`generate_evidence_requests`
   emails its first wave by itself). A release with no assigned contact is refused.
-- Package and thread tools are deprecated: never call them.
 - `list_evidence_requests` returns `{evidence_requests, unmatched_submissions}` — the second
   list holds drop-zone uploads the client sent that are not yet placed on any request. Read it;
   evidence the client already provided is easy to miss otherwise.

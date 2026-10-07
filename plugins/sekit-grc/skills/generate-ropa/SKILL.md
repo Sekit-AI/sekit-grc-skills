@@ -51,10 +51,6 @@ Start from what Sekit already knows, then ask the client only for what's missing
    incomplete, record a `correction_requested` verdict with `review_evidence_request`; its
    `reason` tells the client what is missing.
 
-Do not use evidence packages or request threads (`create_evidence_package`,
-`set_evidence_request_package`, `release_evidence_package`, `post_thread_message`, and the rest):
-they are deprecated and being removed (see sekit-mcp-guide).
-
 ## 2. DRAFT
 
 One entry per **processing activity** (payroll, recruitment, CRM/customers, marketing,
@@ -122,5 +118,4 @@ Drafting rules:
 - Controller vs processor role decides 30(1) vs 30(2); both sections when both roles apply.
 - `classification="confidential"` ⇒ `handling` required on the artifact.
 - A new evidence request reaches the client only once released; replies land as submissions.
-- Never call the deprecated package or thread tools.
 - Approval only when the user says so; new versions supersede, they don't overwrite.
