@@ -146,7 +146,9 @@ contact, and the content before firing.
 
 An ad-hoc request sends no email until you **release** it. Other paths email the client on
 their own, so never promise silence beyond that request: `generate_evidence_requests` emails
-its first wave inside the generation call, and the scheduled nudge sweep sends reminders.
+its first wave inside the generation call; the scheduled nudge sweep sends reminders; and
+until packages are removed from Sekit, a `review_evidence_request` verdict on a request in an
+older package can still email the package's next queued asks.
 The release tools, by what they act on:
 
 - **`release_evidence_request`** (CLIENT-FACING) — «Enviar al cliente» for ONE request that is
