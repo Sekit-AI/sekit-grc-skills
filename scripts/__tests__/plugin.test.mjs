@@ -191,11 +191,9 @@ test('skills no longer name removed package, thread, confirm-task or nudge surfa
     'post_thread_message',
     'list_thread',
     'confirm_task',
-    'nudges_muted',
-    'nudges_paused',
-    'nudge_cadence_days',
   ];
-  const name = new RegExp(`\\b(?:${removed.join('|')})\\b|nudge sweep`, 'gi');
+  // Any nudge wording: the sweep, nudges_muted, nudges_paused, nudge_cadence_days.
+  const name = new RegExp(`\\b(?:${removed.join('|')})\\b|\\bnudge`, 'gi');
 
   for (const skillName of readdirSync(skillsRoot)) {
     const source = readFileSync(resolve(skillsRoot, skillName, 'SKILL.md'), 'utf8');
