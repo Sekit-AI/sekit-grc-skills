@@ -98,7 +98,10 @@ On a **readiness** analysis:
 
 `summary` — **the sentence the client-facing report prints for this control.** Write it as a
 finished statement a consultant would sign: what is missing and on what basis. The consultant can
-rewrite it in the console, and a re-import never overwrites an edited one.
+rewrite it in the console, and a re-import never overwrites an edited one. Gap wording belongs
+here ("No evidence of offline backups"). A risk drawn from this gap is written differently, as a
+harmful event plus its condition and impact, never as a copy of this sentence — see
+**analyze-risks**.
 
 `notes` — a single actionable line when useful (a fast-win cue, a question for the consultant).
 Omit it when there is nothing to add. `summary` is what the report reaches for first, but `notes`

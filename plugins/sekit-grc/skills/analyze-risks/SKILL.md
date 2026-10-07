@@ -34,7 +34,9 @@ each one in evidence (the client wiki, control evaluations, declared facts).
 - **Knowledge base** — `wiki_search` / `wiki_read` for what's already known about this client
   (posture, prior findings, OSINT). See **manage-knowledge-base**.
 - **Control posture** — `list_control_evaluations(client_organization_id)` and
-  `list_gap_analyses(...)` for gaps that should surface as risks.
+  `list_gap_analyses(...)` for the gaps a risk rests on. A gap is the **condition** that lets a
+  harmful event happen, not the risk itself: read the gaps, then ask what could go wrong because
+  of them (step 3, *Risk statement, not a gap*).
 
 Each risk you write should trace to something concrete — cite it.
 
@@ -46,8 +48,8 @@ detection day):
 | Field | Notes |
 |---|---|
 | `client_organization_id` | from `list_clients` |
-| `title` | short label, ≤ ~8 words |
-| `description` | the risk itself |
+| `title` | the harmful event and what it hits, in one short clause (≤ ~15 words) — never a gap label |
+| `description` | the risk statement: the event, the conditions that make it plausible (the gaps behind it, cited), and the impact on the asset or business |
 | `likelihood` | integer **1–5** |
 | `impact` | integer **1–5** |
 | `impact_type` | `financial` \| `operational` \| `human_personal` \| `legal_regulatory` \| `reputational` \| `environmental_vital` |
@@ -110,6 +112,46 @@ Useful **optional** fields:
 cite controls, evidence, specifics) and a plain-language business consequence the SME can read
 in `consequence`. Don't say "PR.AA-01"; say "an attacker can send
 emails that look like they came from your company." Don't repeat the same text in both layers.
+
+#### Risk statement, not a gap
+
+A gap finding and a risk say different things. The gap analysis records **what is missing**
+("no evidence of offline backups"); the register records **what can go wrong because of it**.
+Write every `title` and `description` as a risk statement with three parts:
+
+1. **Event** — the harmful thing that happens, and who or what causes it (ransomware, a
+   departed employee's live account, a supplier outage, a regulator's inspection).
+2. **Condition** — why it is plausible here: the gaps, weaknesses or facts it rests on. This
+   is where the gap belongs, as cause and evidence. Cite the control codes in
+   `related_controls`, and back the risk with the evidence the gap rests on (step 6): the same
+   client file or wiki page, or an `inference` evidence whose `body` cites the evaluation.
+3. **Impact** — the asset or business process hit, and the consequence (data lost, service
+   down, fine, contract lost). The SME-facing version goes in `consequence`.
+
+Rewrite, never copy. A gap's title, a control evaluation's `summary`, or a control name is never
+the `title`, and never the whole `description` or its opening. Gap wording may appear inside the
+description only as the cited condition, after the event (as in the example below). A gap label
+is a statement of absence that names no harmful event — "Lack of…", "Absence of…", "No
+policy…", "Missing…", "Insufficient…", "Gap (high): no evidence of…". Neither field opens with
+one or consists of one; lead with the event instead. If you cannot name the event a gap enables,
+it is not yet a risk: leave it in the gap analysis and say so.
+
+Gaps and risks are not one-to-one. Several gaps usually combine into one risk (flat network +
+backups on the same network + no tested restore → one ransomware risk), and one gap can feed
+several risks. Group them by the event, not by the control.
+
+| Gap wording (stays in the gap analysis) | Risk statement (`create_risk` title) |
+| --- | --- |
+| No tenant network segmentation | Ransomware encrypts the legacy estate and its backups simultaneously |
+| Lack of vulnerability management for the SaaS platform | Attackers compromise the SaaS platform through its known unremediated critical flaws |
+| Access reviews without a cadence | A departed employee's still-active account is used to exfiltrate client records |
+| Gap (high): no evidence of a supplier exit plan | A sole hosting supplier fails and the client cannot serve customers for weeks |
+
+A full `description` for the first row: *"Ransomware reaching any workstation can spread across
+the flat network to the legacy servers and the backup NAS on the same VLAN, encrypting
+production and its only recovery copy at once (gaps: no network segmentation, backups not
+isolated, restore never tested). The client would lose order and invoicing data and stay offline
+until it is rebuilt."*
 
 ### 4. Create (or update)
 

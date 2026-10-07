@@ -151,6 +151,33 @@ test('every skill has portable, valid frontmatter', () => {
   }
 });
 
+test('analyze-risks writes risk statements, not copied gap labels (SK-736)', () => {
+  const risks = readFileSync(resolve(skillsRoot, 'analyze-risks/SKILL.md'), 'utf8');
+  const section = risks.match(/\n#### Risk statement, not a gap\n([\s\S]*?)(?=\n#{1,4} |$)/);
+  assert.ok(section, 'analyze-risks must carry the "Risk statement, not a gap" standard');
+
+  // The labels the ticket names as gap prose; a risk title or description never opens with one.
+  const gapLabel = /^(?:lack of|absence of|absent|no|missing|insufficient|inadequate|gap|without)\b/i;
+  const pairs = [...section[1].matchAll(/^\| (.+?) \| (.+?) \|$/gm)]
+    .map(([, gap, risk]) => [gap.replace(/[*`]/g, '').trim(), risk.replace(/[*`]/g, '').trim()])
+    .filter(([gap]) => !/^[-:]+$/.test(gap) && !/^Gap wording/i.test(gap));
+  assert.ok(pairs.length >= 3, 'the standard must show at least three gap/risk pairs');
+  for (const [gap, risk] of pairs) {
+    assert.doesNotMatch(risk, gapLabel, `"${risk}" reads as a gap label, not a risk statement`);
+    assert.notEqual(risk.toLowerCase(), gap.toLowerCase());
+  }
+
+  const example = section[1].match(/A full `description` for the first row: \*"([^"]+)"\*/);
+  assert.ok(example, 'the standard must show one full risk description');
+  assert.doesNotMatch(example[1], gapLabel, 'the example description must lead with the event');
+
+  const controls = readFileSync(resolve(skillsRoot, 'evaluate-controls/SKILL.md'), 'utf8');
+  const summary = controls.match(/^`summary` — [\s\S]*?\n\n/m);
+  assert.ok(summary, 'evaluate-controls must document the summary field');
+  assert.match(summary[0], /what is missing/, 'gap prose stays gap prose');
+  assert.match(summary[0], /\*\*analyze-risks\*\*/, 'the summary field points at the risk-statement contrast');
+});
+
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
   assert.ok(existsSync(artifact), 'npm test must build dist/sekit-grc.plugin first');
   assert.doesNotThrow(() => execFileSync('unzip', ['-tq', artifact], { stdio: 'pipe' }));
