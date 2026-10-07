@@ -192,12 +192,13 @@ test('skills no longer name removed package, thread, confirm-task or nudge surfa
     'list_thread',
     'confirm_task',
   ];
-  // Any nudge wording: the sweep, nudges_muted, nudges_paused, nudge_cadence_days.
-  const name = new RegExp(`\\b(?:${removed.join('|')})\\b|\\bnudge`, 'gi');
+  // Any nudge wording: the sweep, nudging, nudges_muted, nudges_paused, nudge_cadence_days.
+  const name = new RegExp(`\\b(?:${removed.join('|')})\\b|\\bnudg`, 'gi');
 
-  for (const skillName of readdirSync(skillsRoot)) {
-    const source = readFileSync(resolve(skillsRoot, skillName, 'SKILL.md'), 'utf8');
-    assert.deepEqual(source.match(name) ?? [], [], `${skillName} still names a removed surface`);
+  // Every packaged file under a skill, including agents/openai.yaml.
+  for (const file of filesBelow(skillsRoot)) {
+    const source = readFileSync(file, 'utf8');
+    assert.deepEqual(source.match(name) ?? [], [], `${relative(skillsRoot, file)} still names a removed surface`);
   }
 
   // Single-request release stays: the step-2 drop must not take it with the packages.

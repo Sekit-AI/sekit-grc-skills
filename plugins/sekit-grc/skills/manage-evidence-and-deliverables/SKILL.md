@@ -138,8 +138,8 @@ contact, and the content before firing.
 ### Releasing (CLIENT-FACING)
 
 An ad-hoc request sends no email until you **release** it. Other paths email the client on
-their own (for one, `generate_evidence_requests` emails its first wave inside the generation
-call), so never promise silence beyond the request you release.
+their own, so never promise silence beyond the requests you release. For one,
+`generate_evidence_requests` emails its first wave inside the generation call.
 The release tools, by what they act on:
 
 - **`release_evidence_request`** (CLIENT-FACING) — «Enviar al cliente» for ONE request that is
