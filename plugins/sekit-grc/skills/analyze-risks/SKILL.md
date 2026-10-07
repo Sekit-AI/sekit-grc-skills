@@ -123,15 +123,18 @@ Write every `title` and `description` as a risk statement with three parts:
    departed employee's live account, a supplier outage, a regulator's inspection).
 2. **Condition** — why it is plausible here: the gaps, weaknesses or facts it rests on. This
    is where the gap belongs, as cause and evidence. Cite the control codes in
-   `related_controls` and link the evaluations as evidence (step 6).
+   `related_controls`, and back the risk with the evidence the gap rests on (step 6): the same
+   client file or wiki page, or an `inference` evidence whose `body` cites the evaluation.
 3. **Impact** — the asset or business process hit, and the consequence (data lost, service
    down, fine, contract lost). The SME-facing version goes in `consequence`.
 
-Rewrite, never copy. Do not paste a gap's title, a control evaluation's `summary`, or a control
-name into `title` or `description`. A risk title or description never opens with a gap label —
-"Lack of…", "Absence of…", "No policy…", "Missing…", "Insufficient…", "Gap (high): no evidence
-of…" — and never consists of one. If you cannot name the event a gap enables, it is not yet a
-risk: leave it in the gap analysis and say so.
+Rewrite, never copy. A gap's title, a control evaluation's `summary`, or a control name is never
+the `title`, and never the whole `description` or its opening. Gap wording may appear inside the
+description only as the cited condition, after the event (as in the example below). A gap label
+is a statement of absence that names no harmful event — "Lack of…", "Absence of…", "No
+policy…", "Missing…", "Insufficient…", "Gap (high): no evidence of…". Neither field opens with
+one or consists of one; lead with the event instead. If you cannot name the event a gap enables,
+it is not yet a risk: leave it in the gap analysis and say so.
 
 Gaps and risks are not one-to-one. Several gaps usually combine into one risk (flat network +
 backups on the same network + no tested restore → one ransomware risk), and one gap can feed

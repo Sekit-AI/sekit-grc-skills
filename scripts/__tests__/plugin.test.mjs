@@ -153,11 +153,11 @@ test('every skill has portable, valid frontmatter', () => {
 
 test('analyze-risks writes risk statements, not copied gap labels (SK-736)', () => {
   const risks = readFileSync(resolve(skillsRoot, 'analyze-risks/SKILL.md'), 'utf8');
-  const section = risks.match(/\n#### Risk statement, not a gap\n([\s\S]*?)\n#{2,4} /);
+  const section = risks.match(/\n#### Risk statement, not a gap\n([\s\S]*?)(?=\n#{1,4} |$)/);
   assert.ok(section, 'analyze-risks must carry the "Risk statement, not a gap" standard');
 
   // The labels the ticket names as gap prose; a risk title or description never opens with one.
-  const gapLabel = /^(?:lack of|absence of|absent|no |missing|insufficient|inadequate|gap\b|without )/i;
+  const gapLabel = /^(?:lack of|absence of|absent|no|missing|insufficient|inadequate|gap|without)\b/i;
   const pairs = [...section[1].matchAll(/^\| (.+?) \| (.+?) \|$/gm)]
     .map(([, gap, risk]) => [gap.replace(/[*`]/g, '').trim(), risk.replace(/[*`]/g, '').trim()])
     .filter(([gap]) => !/^[-:]+$/.test(gap) && !/^Gap wording/i.test(gap));
@@ -166,6 +166,10 @@ test('analyze-risks writes risk statements, not copied gap labels (SK-736)', () 
     assert.doesNotMatch(risk, gapLabel, `"${risk}" reads as a gap label, not a risk statement`);
     assert.notEqual(risk.toLowerCase(), gap.toLowerCase());
   }
+
+  const example = section[1].match(/A full `description` for the first row: \*"([^"]+)"\*/);
+  assert.ok(example, 'the standard must show one full risk description');
+  assert.doesNotMatch(example[1], gapLabel, 'the example description must lead with the event');
 
   const controls = readFileSync(resolve(skillsRoot, 'evaluate-controls/SKILL.md'), 'utf8');
   const summary = controls.match(/^`summary` — [\s\S]*?\n\n/m);
