@@ -97,7 +97,7 @@ The host may prefix tool names. Read-only listers/getters are safe to call freel
 | **Artifacts / deliverables** | `list_artifacts`, `get_artifact`, `prepare_artifact_upload`, `create_artifact_from_upload`, `update_artifact`, `approve_artifact`, `revert_artifact_approval`, `archive_artifact`, `restore_artifact` → see **manage-evidence-and-deliverables** |
 | **Client files** | `list_client_files`, `get_client_file`, `get_client_file_markdown`, `download_client_file`, `prepare_client_file_upload`, `create_client_file_from_upload`, `update_client_file`, `archive_client_file`, `restore_client_file` |
 | **Assets / inventory** | `list_assets`, `get_asset`, `create_asset`, `update_asset`, `archive_asset`, `restore_asset`, `list_asset_links`, `create_asset_link`, `archive_asset_link`, `restore_asset_link` → see **manage-assets** |
-| **People / portal** | `list_contacts`, `get_contact`, `create_contact` (bridge a person asset via `asset_id`), `update_contact`, `archive_contact`, `restore_contact`, `mint_portal_token`, `list_portal_tokens`, `revoke_portal_token` → see **manage-assets** |
+| **People / portal** | `list_contacts`, `get_contact`, `create_contact` (bridge a person asset via `asset_id`), `update_contact`, `archive_contact`, `restore_contact`, `list_collection_sessions`, `mint_portal_token` (shares a Solicitud; client-facing), `list_portal_tokens`, `revoke_portal_token` → see **manage-assets** |
 | **Knowledge base (wiki)** | `wiki_list`, `wiki_read`, `wiki_search`, `wiki_write`, `wiki_append` → see **manage-knowledge-base** |
 | **Audit log** (read-only) | `list_audit_log`, `get_audit_entry` |
 | **Tokens** | `list_tokens`, `create_token`, `revoke_token` |
@@ -183,7 +183,12 @@ that its guidance will be sparse (mostly `null` / `projected`) so most fields ar
 **Collect evidence with a collection session.** In the Sekit console, open the client's gap
 analysis and use **Collect evidence**: it starts a collection session (Solicitud) for that one
 analysis, and the client answers in their portal with Sekura. There is no consultant MCP tool
-that starts a session; send the consultant to the console for it.
+that starts a session; send the consultant to the console for it. Once one is open, you can
+share it: `list_collection_sessions(client_organization_id)` lists the client's Solicitudes
+(open first), and `mint_portal_token(client_organization_id, contact_id,
+collection_session_id)` adds a contact as a recipient of an open one and returns their portal
+link. Every portal link belongs to a Solicitud; there is no client-wide link. See
+**manage-assets**.
 
 **Evidence requests** ("solicitudes") are the older per-ask records: upload a document
 (`kind="upload_evidence"`) or confirm a task is done (`kind="confirm_task"`). Their lifecycle
@@ -324,4 +329,4 @@ These tools mutate a live consultant platform. Before any **create / update / ap
 | Read/write the per-client knowledge base (wiki) | **manage-knowledge-base** |
 | Attach evidence, upload files, manage + approve deliverables | **manage-evidence-and-deliverables** |
 | Register people / vendors / systems, set criticality + owner, link assets to risks/gaps/controls/requests | **manage-assets** |
-| Make a person contactable / assignable, grant or revoke a client portal magic link | **manage-assets** |
+| Make a person contactable / assignable, share a Solicitud with them (portal access), or revoke a portal link | **manage-assets** |

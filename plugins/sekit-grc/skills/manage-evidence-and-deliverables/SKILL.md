@@ -129,7 +129,9 @@ contact, and the content before firing.
 - **Collect evidence for an analysis →** a **collection session** (Solicitud). The consultant
   starts it in the Sekit console from the gap analysis (**Collect evidence**); the client then
   answers in their portal with Sekura. No consultant MCP tool starts a session, so point the
-  consultant to the console.
+  consultant to the console. To give another person access to an open one, share it with
+  `mint_portal_token(client_organization_id, contact_id, collection_session_id)` (see
+  **manage-assets**).
 - **One-off ask →** `create_evidence_request`. Use it for an ad-hoc "please upload X" or
   "confirm you did Y". `kind` is `upload_evidence` (a document) or `confirm_task` (a
   done-check); `title` is required. It lands **`pending`** (there is no draft state) with **no

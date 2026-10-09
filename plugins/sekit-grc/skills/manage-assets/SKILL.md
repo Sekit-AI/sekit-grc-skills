@@ -1,6 +1,6 @@
 ---
 name: manage-assets
-description: "Register and maintain a Sekit client's asset inventory over the consultant MCP: people, third parties, and systems, each with a criticality and an owner. Create, update, and archive assets, and link an asset to the risks, gap analyses, control evaluations, or evidence requests it concerns with a role of owner, affected, processor, or custodian. Also manage the people facet: bridge a person asset to a client contact and grant portal access by minting, listing, or revoking a magic-link portal token. Use whenever the user wants to add or edit a client's people, vendors, or systems, set an asset owner or criticality, decide who owns or is affected by a piece of work, connect assets to the items that reference them, make a person contactable or assignable, give a client a portal link, or revoke portal access. Framework-agnostic. Read the sekit-mcp-guide skill first."
+description: "Register and maintain a Sekit client's asset inventory over the consultant MCP: people, third parties, and systems, each with a criticality and an owner. Create, update, and archive assets, and link an asset to the risks, gap analyses, control evaluations, or evidence requests it concerns with a role of owner, affected, processor, or custodian. Also manage the people facet: bridge a person asset to a client contact, give that contact portal access by sharing one of the client's open Solicitudes (collection sessions), and list or revoke their portal links. Use whenever the user wants to add or edit a client's people, vendors, or systems, set an asset owner or criticality, decide who owns or is affected by a piece of work, connect assets to the items that reference them, make a person contactable or assignable, give a client person portal access or share a Solicitud with them, or revoke a portal link. Framework-agnostic. Read the sekit-mcp-guide skill first."
 ---
 
 # Manage assets
@@ -116,10 +116,10 @@ label.
 ## The people facet — contacts + portal access
 
 A **person asset** is the canonical identity. To make that person *contactable* (assignable to
-evidence requests) or to give them a **portal link** (so they can submit evidence through the
-client portal), they need a **client contact** — the portal/comms facet of the person asset. The
-contact is bridged to the asset by `asset_id`; portal tokens and request assignment attach to the
-contact, never to the bare asset.
+evidence requests) or to give them **portal access** (so they can answer a Solicitud and submit
+evidence through the client portal), they need a **client contact** — the portal/comms facet of
+the person asset. The contact is bridged to the asset by `asset_id`; portal links and request
+assignment attach to the contact, never to the bare asset.
 
 ### Bridge a person to a contact
 
@@ -137,19 +137,49 @@ email)` — but prefer bridging, so people stay unified on the asset register. `
 `archive_contact` / `restore_contact` soft-delete (owner-only — a contact anchors submission
 provenance).
 
-### Grant / revoke portal access
+### Share a Solicitud (portal access) / revoke a link
 
-- **`mint_portal_token(client_organization_id, contact_id)`** — mints a fresh magic link. This is
-  the **only** place the raw `ptk_…` token and ready-to-send `portal_url` are returned (shown
-  once, valid 14 days). Hand the `portal_url` to the client; never persist the raw token. Any
-  consultant may mint.
+Every portal link belongs to one **Solicitud** (collection session): the portal opens on that
+Solicitud and refuses a link without one. There is no client-wide portal link any more, so giving
+a person portal access means adding them as a recipient of one of the client's **open**
+Solicitudes.
+
+- **`list_collection_sessions(client_organization_id)`** — the client's Solicitudes, open first
+  then closed. Each has its `id`, the gap analysis or readiness review it collects evidence for
+  (`gap_analysis_id`, `analysis_title`, `analysis_reason`, `evaluation_mode`), `due_date`,
+  `delivery` (`email` or `link`), `closed`, its recipients (contacts by `client_contact_id`,
+  members by `user_id`) and progress. Read it to pick the Solicitud and to see whether the
+  person already receives it.
+- **`mint_portal_token(client_organization_id, contact_id, collection_session_id)`** — shares
+  that Solicitud with the contact. **Always pass `collection_session_id`** (an open one,
+  `closed: false`): a link minted without it belongs to no Solicitud, and the portal refuses it.
+  The call adds the contact as a recipient (idempotent: an existing recipient is not added
+  twice) and returns `{id, portal_url, expires_at, collection_session_id, client_contact_id,
+  recipient_added, emailed}`. `portal_url` is the ready-to-send link, returned **only here and
+  only once** (valid 14 days): hand it to the client and never persist it. `id` is the portal
+  token id that `revoke_portal_token` takes. Any consultant may share. A closed or unknown
+  Solicitud is a `not_found` error.
+- **It can email the client.** On a Solicitud with `delivery: "email"`, a **newly added**
+  recipient is emailed the link (`emailed: true`). Re-sharing with someone who already receives
+  it returns a fresh link and sends no email (`emailed: false`). Confirm the person and the
+  Solicitud with the consultant before sharing (see Safety in sekit-mcp-guide).
+- **Each share keeps only the contact's 3 newest live links to that Solicitud** and revokes the
+  older ones (links from the Solicitud's news emails or the contact's own refresh count too).
+  Any consultant who may share triggers this; it never touches the contact's links to another
+  Solicitud. Because a link is shown only once, re-sharing is how you get a new one.
 - **`list_portal_tokens(client_organization_id, contact_id)`** — the audit-safe view (no raw
-  token), to see what's live.
-- **`revoke_portal_token(client_organization_id, contact_id, portal_token_id)`** — pulls a live
-  credential. **Owner-only.**
+  token): each link's `id`, the Solicitud it opens (`collection_session_id`; `null` is a retired
+  general link the portal refuses), expiry, and revoked / used / active state.
+- **`revoke_portal_token(client_organization_id, contact_id, portal_token_id)`** — pulls one
+  chosen live link. **Owner-only.**
+
+**No open Solicitud?** No consultant MCP tool starts one. The consultant starts it from the
+analysis page in the Sekit console (**Collect evidence**); then share it as above.
 
 A useful flow: `create_asset(asset_type=person, …, email=…)` → `create_contact(asset_id=<id>)` →
-`mint_portal_token(contact_id=<id>)` → hand over the `portal_url`.
+`list_collection_sessions(client_organization_id)` → pick an open one →
+`mint_portal_token(contact_id=<id>, collection_session_id=<id>)` → hand over the `portal_url`,
+or tell the consultant it was emailed when `emailed` is true.
 
 ## Constraints (the validator will reject otherwise)
 
@@ -161,6 +191,8 @@ A useful flow: `create_asset(asset_type=person, …, email=…)` → `create_con
 - `linkable_type` must be one of the four allowed classes; the asset and the linked record must
   share the client (a cross-client or wrong id is a clean error, not a crash).
 - Bridging a contact needs an **email-bearing person** asset — emailless → 422, non-person → 404.
-  `mint_portal_token` is any-consultant; `revoke_portal_token`, `archive_contact`, and
-  `restore_contact` are **owner-only**.
+  `mint_portal_token` (sharing a Solicitud) is any-consultant and needs an **open** Solicitud of
+  the same client (closed or unknown is `not_found`); a Solicitud takes at most 20 recipients, so
+  a new recipient past that is a clean validation error. `revoke_portal_token`,
+  `archive_contact`, and `restore_contact` are **owner-only**.
 - Archive (not delete) to remove — nothing is hard-deleted; `restore_*` brings it back.
