@@ -91,7 +91,7 @@ Recommend one small, reversible outcome instead of launching a whole engagement:
 - **ROPA:** confirm the client and source material before drafting processing activities.
 
 After the first outcome, recap what was learned or created and offer the next specialist
-workflow. Do not continue into bulk writes, approvals, archives, portal-token minting, or
+workflow. Do not continue into bulk writes, approvals, archives, sharing a Solicitud, or
 client-facing releases without the confirmations required by `sekit-mcp-guide`.
 
 ## Avoid these onboarding failures
