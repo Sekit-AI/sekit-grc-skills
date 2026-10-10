@@ -102,8 +102,8 @@ a file — the old blob is purged). Review with `list_artifacts` / `get_artifact
 
 ### Approval governance
 
-- **`approve_artifact(client_organization_id, artifact_id)`** — `draft → approved`. **Owner-only**
-  (a `member` gets a clean `forbidden`), idempotent. Stamps `approver_name` (your email),
+- **`approve_artifact(client_organization_id, artifact_id)`** — `draft → approved`. Any member of
+  the firm may approve (sign), idempotent. Stamps `approver_name` (your email),
   `effective_date` (today), `next_review_date` (+6 months), `approved_at`.
 - **`revert_artifact_approval`** — `approved → draft`.
 - `archive_artifact` / `restore_artifact` — soft-delete / undo.
@@ -202,8 +202,8 @@ is the deterministic per-control request generator:
 
 - Evidence `kind` must match its source field; target (`evidenceable_type`/`_id`) is immutable.
 - Upload is two-step; bytes go to the presigned URL, never through a tool argument.
-- Artifacts land `draft`; lifecycle fields are server-controlled; `approve_artifact` is
-  owner-only.
+- Artifacts land `draft`; lifecycle fields are server-controlled; any member may call
+  `approve_artifact`.
 - `handling` required for confidential / strictly_confidential artifacts.
 - Collect evidence for an analysis with a collection session, started from the console.
 - An ad-hoc `create_evidence_request` lands **`pending`** and is not listed in the portal; its

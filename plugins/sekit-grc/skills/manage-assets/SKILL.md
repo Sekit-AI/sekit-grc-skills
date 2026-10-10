@@ -109,8 +109,8 @@ label.
 
 ### 6. Governance (when asked)
 
-- `archive_asset` / `restore_asset` — soft-delete / undo on an asset. **Owner-only.**
-- `archive_asset_link` / `restore_asset_link` — unlink / re-link. **Owner-only.** Re-linking the
+- `archive_asset` / `restore_asset` — soft-delete / undo on an asset. Any member.
+- `archive_asset_link` / `restore_asset_link` — unlink / re-link. Any member. Re-linking the
   same `(asset, target, role)` after an archive is allowed.
 
 ## The people facet — contacts + portal access
@@ -134,8 +134,8 @@ assignment, never duplicating on the unique email), and takes `name` + `email` f
 A standalone contact (no asset) is also possible: `create_contact(client_organization_id, name,
 email)` — but prefer bridging, so people stay unified on the asset register. `list_contacts` /
 `get_contact` read them; `update_contact` edits name/email/locale (PATCH — only what you pass);
-`archive_contact` / `restore_contact` soft-delete (owner-only — a contact anchors submission
-provenance).
+`archive_contact` / `restore_contact` soft-delete (any member; archive keeps the row because a
+contact anchors submission provenance).
 
 ### Share a Solicitud (portal access) / revoke a link
 
@@ -193,6 +193,6 @@ or tell the consultant it was emailed when `emailed` is true.
 - Bridging a contact needs an **email-bearing person** asset — emailless → 422, non-person → 404.
   `mint_portal_token` (sharing a Solicitud) is any-consultant and needs an **open** Solicitud of
   the same client (closed or unknown is `not_found`); a Solicitud takes at most 20 recipients, so
-  a new recipient past that is a clean validation error. `revoke_portal_token`,
-  `archive_contact`, and `restore_contact` are **owner-only**.
+  a new recipient past that is a clean validation error. `revoke_portal_token` is
+  **owner-only**; `archive_contact` and `restore_contact` are open to any member.
 - Archive (not delete) to remove — nothing is hard-deleted; `restore_*` brings it back.

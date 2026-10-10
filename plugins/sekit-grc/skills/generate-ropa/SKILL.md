@@ -110,8 +110,8 @@ Drafting rules:
    consultant and call `update_control_evaluation` only after they confirm the new verdict and
    rationale; until then, continue to report the evaluation's current status, including an open
    gap.
-4. Approval (`approve_artifact`) is a governance action: **only on explicit user instruction**,
-   owner-only. It stamps `effective_date` and `next_review_date` (+6 months) — that stamp IS
+4. Approval (`approve_artifact`) is a governance action: **only on explicit user instruction**;
+   any member of the firm may approve. It stamps `effective_date` and `next_review_date` (+6 months) — that stamp IS
    the review cadence; the ROPA is a living record, not a one-off.
 5. Revisions: upload a new artifact with `supersedes_id` pointing at the previous version —
    never overwrite an approved ROPA in place.
