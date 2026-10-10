@@ -299,9 +299,9 @@ identity, whether the host obtained it through OAuth or a PAT. What that buys yo
   unapproving risks, approving (signing) and reverting artifacts, deciding control
   evaluations, and the archive / restore pairs listed under Soft-delete. The `owner` keeps
   firm administration: billing, invitations, roles, archiving or restoring a client company,
-  and revoking portal links. On this surface the owner-only tool is `revoke_portal_token`;
-  the rest is done in the Sekit console. A `member` calling an owner-only action gets a clean
-  authorization error; that's expected, not a bug.
+  and revoking portal links. Of those administrative actions, only `revoke_portal_token` is
+  exposed on this surface; the others are done in the Sekit console. A `member` calling an
+  owner-only action gets a clean authorization error; that's expected, not a bug.
 - **Write audit trail**: database audit records attribute changes to the authenticated user.
   Inspect them with `list_audit_log` and `get_audit_entry` when needed. Read-only MCP calls do
   not create per-record audit entries, so never describe a read as audit-tracked.
