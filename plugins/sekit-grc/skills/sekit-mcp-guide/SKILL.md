@@ -211,7 +211,9 @@ spans your side and the client's portal:
 4. **Review** the submission (`review_evidence_request`) with a `verdict` — `accepted`,
    `correction_requested`, or `rejected`. A `correction_requested` / `rejected` verdict
    **requires a non-blank `reason` (shown to the client)**; `accepted` does not.
-5. `archive_evidence_request` / `restore_evidence_request` soft-delete / undo (owner-only).
+5. `archive_evidence_request` / `restore_evidence_request` were retired from the connector
+   (with the rest of the legacy evidence-request tools); a request cannot be archived or
+   restored here.
 
 **The client-facing tools** — `release_evidence_request` and `release_wave` — **reach the
 client** (portal visibility + email). Treat each as an egress action: confirm the client,
@@ -295,10 +297,10 @@ identity, whether the host obtained it through OAuth or a PAT. What that buys yo
 
 - **Tenant isolation** (Postgres RLS): you can only see/touch clients in **your firm**. A
   cross-tenant id returns 404, never another firm's data.
-- **Role-based actions**: GRC work is open to **any member** of the firm — approving and
+- **Role-based actions**: GRC work is open to **any member** of the team — approving and
   unapproving risks, approving (signing) and reverting artifacts, deciding control
   evaluations, and the archive / restore pairs listed under Soft-delete. The `owner` keeps
-  firm administration: billing, invitations, roles, archiving or restoring a client company,
+  team administration: billing, invitations, roles, archiving or restoring a client company,
   and revoking portal links. Of those administrative actions, only `revoke_portal_token` is
   exposed on this surface; the others are done in the Sekit console. A `member` calling an
   owner-only action gets a clean authorization error; that's expected, not a bug.

@@ -217,7 +217,7 @@ evidenceable_id=<risk id>, kind=..., ...)`. See **manage-evidence-and-deliverabl
 
 ### 7. Governance (when asked)
 
-- `approve_risk` / `unapprove_risk` — any member of the firm; only when the user explicitly approves.
+- `approve_risk` / `unapprove_risk` — any member of the team; only when the user explicitly approves.
 - `archive_risk` / `restore_risk` — soft-delete / undo. Any member, like the approvals.
 
 ## Constraints (the validator will reject otherwise)

@@ -103,7 +103,7 @@ a file — the old blob is purged). Review with `list_artifacts` / `get_artifact
 ### Approval governance
 
 - **`approve_artifact(client_organization_id, artifact_id)`** — `draft → approved`. Any member of
-  the firm may approve (sign), idempotent. Stamps `approver_name` (your email),
+  the team may approve (sign), idempotent. Stamps `approver_name` (your email),
   `effective_date` (today), `next_review_date` (+6 months), `approved_at`.
 - **`revert_artifact_approval`** — `approved → draft`.
 - `archive_artifact` / `restore_artifact` — soft-delete / undo.
@@ -181,7 +181,8 @@ tools. Once a submission is accepted, close the loop back to section A:
 attach it as evidence with `create_evidence(kind="client_file", ...)` so the verdict it backs
 is provable.
 
-`archive_evidence_request` / `restore_evidence_request` soft-delete / undo (owner-only).
+`archive_evidence_request` / `restore_evidence_request` were retired from the connector (with
+the rest of the legacy evidence-request tools); a request cannot be archived or restored here.
 
 ### Generating requests directly from a gap analysis
 
