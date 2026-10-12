@@ -222,8 +222,11 @@ reviewed, exactly as **Mark reviewed** does in the console — a governance acti
 when the consultant explicitly asks. Two refusal shapes to expect: an id that is unknown,
 already discarded or another client's refuses the **whole call** before anything changes; once
 the ids are accepted, each update is approved on its own and one that fails is reported as
-`failed` in `outcomes` while the rest go through. A call takes at most 100 ids and returns
-`pending_remaining`; loop while it is above zero.
+`failed` in `outcomes` while the rest go through. Pass either `update_ids` or `all: true`,
+never both; each call handles at most 100 updates (the oldest 100 with `all`) and returns
+`pending_remaining`. Loop while it is above zero and the last call approved something: a
+`failed` update stays pending, so a call that approves nothing means stop and report. A bulk
+approval is still batch work under Safety — summarize and get the go-ahead first.
 
 ### Bandeja triage — reviewing agent proposals
 
@@ -234,6 +237,8 @@ awaiting a human decision (each enriched with the agent's `reasoning` and the ci
 CE's full history with `get_control_evaluation_activity` (the merged agent-proposal + human-
 decision timeline), then decide with `approve_control_evaluation` or `reject_control_evaluation`
 (**reject requires a `reason`**). See **evaluate-controls** for the triage subsection.
+Readiness rows never appear under an inbox filter: for a readiness Solicitud, read
+`list_agent_updates` instead.
 
 ## Result + error shapes (no exceptions — read the value)
 
