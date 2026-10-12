@@ -125,7 +125,8 @@ consultant confirm:
 - Remediation: `recommended_remediation` **prefilled from `guidance.remediation_template`**,
   `estimated_effort`, `current_tier`/`target_tier` (0–4), `owner_type`
   (`consultant`/`client_internal`/`external_specialist`), `confidence`, `notes`.
-- Evidence requests driven by `guidance.evidence_expectation`.
+- What to ask the client for, from `guidance.evidence_expectation` (collected through a
+  Solicitud, see manage-evidence-and-deliverables).
 
 Every guidance-derived value is a **suggestion the consultant confirms**, never a verdict (the
 provenance / null rules in **sekit-mcp-guide** apply). See **evaluate-controls** for the XOR-leg

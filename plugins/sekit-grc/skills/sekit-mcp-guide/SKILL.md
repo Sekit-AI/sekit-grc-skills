@@ -1,6 +1,6 @@
 ---
 name: sekit-mcp-guide
-description: "Foundation and cross-platform connector reference for the Sekit consultant MCP. Covers OAuth and Personal Access Token connection options for Claude, ChatGPT, Codex, and other MCP hosts; the orient-first protocol (call whoami then list_clients before any client-scoped tool); the full tool catalog; framework-as-data; error and result shapes; soft-delete; tenancy; authorization; and audit guarantees. Load this before any other Sekit workflow and whenever the user mentions Sekit, its consultant connector, authentication, clients, risks, controls, frameworks, gap analysis, knowledge, assets, evidence, requests, the Bandeja review inbox, or deliverables."
+description: "Foundation and cross-platform connector reference for the Sekit consultant MCP. Covers OAuth and Personal Access Token connection options for Claude, ChatGPT, Codex, and other MCP hosts; the orient-first protocol (call whoami then list_clients before any client-scoped tool); the full tool catalog; framework-as-data; error and result shapes; soft-delete; tenancy; authorization; and audit guarantees. Load this before any other Sekit workflow and whenever the user mentions Sekit, its consultant connector, authentication, clients, risks, controls, frameworks, gap analysis, knowledge, assets, evidence, Solicitudes (collection sessions), the client portal, Agent updates, the Bandeja review inbox, or deliverables."
 ---
 
 # Sekit consultant MCP — foundation
@@ -90,14 +90,12 @@ The host may prefix tool names. Read-only listers/getters are safe to call freel
 | **Reference data** (read-only) | `list_frameworks`, `list_controls`, `search_controls`, `search_control_catalog`, `get_control`, `list_framework_controls`, `list_industries` |
 | **Custom library** (org-authored frameworks + controls) | `list_custom_frameworks`, `get_custom_framework`, `create_custom_framework`, `update_custom_framework`, `archive_custom_framework`, `restore_custom_framework`, `list_custom_controls`, `get_custom_control`, `create_custom_control`, `update_custom_control`, `archive_custom_control`, `restore_custom_control`, `add_framework_member`, `update_framework_member`, `remove_framework_member` |
 | **Evidence** | `list_evidence`, `get_evidence`, `create_evidence`, `update_evidence`, `archive_evidence`, `restore_evidence` → see **manage-evidence-and-deliverables** |
-| **Evidence requests (solicitudes)** | `list_evidence_requests`, `get_evidence_request`, `get_submission_markdown`, `create_evidence_request`, `update_evidence_request`, `review_evidence_request`, `release_evidence_request` (client-facing), `archive_evidence_request`, `restore_evidence_request` → see **manage-evidence-and-deliverables** |
-| **Evidence request pacing** | `release_wave` (client-facing) → see **manage-evidence-and-deliverables** |
-| **Deprecated — do not call** (packages + threads) | `list_evidence_packages`, `get_evidence_package`, `create_evidence_package`, `update_evidence_package`, `release_evidence_package`, `close_evidence_package`, `reopen_evidence_package`, `set_evidence_request_package`, `post_thread_message`, `list_thread` → see **Deprecated: packages and threads** below |
-| **Evidence request generation** (deterministic, no AI) | `generate_evidence_requests` → see **manage-evidence-and-deliverables** |
+| **Solicitudes (collection sessions)** | `list_collection_sessions`, `mint_portal_token` (shares a Solicitud with a contact; client-facing) → see **Solicitudes** below and **manage-assets** |
+| **Agent updates** (review inbox for agent writes) | `list_agent_updates`, `approve_agent_updates` (Mark reviewed; only on explicit instruction) → see **Agent updates** below |
 | **Artifacts / deliverables** | `list_artifacts`, `get_artifact`, `prepare_artifact_upload`, `create_artifact_from_upload`, `update_artifact`, `approve_artifact`, `revert_artifact_approval`, `archive_artifact`, `restore_artifact` → see **manage-evidence-and-deliverables** |
 | **Client files** | `list_client_files`, `get_client_file`, `get_client_file_markdown`, `download_client_file`, `prepare_client_file_upload`, `create_client_file_from_upload`, `update_client_file`, `archive_client_file`, `restore_client_file` |
 | **Assets / inventory** | `list_assets`, `get_asset`, `create_asset`, `update_asset`, `archive_asset`, `restore_asset`, `list_asset_links`, `create_asset_link`, `archive_asset_link`, `restore_asset_link` → see **manage-assets** |
-| **People / portal** | `list_contacts`, `get_contact`, `create_contact` (bridge a person asset via `asset_id`), `update_contact`, `archive_contact`, `restore_contact`, `list_collection_sessions`, `mint_portal_token` (shares a Solicitud; client-facing), `list_portal_tokens`, `revoke_portal_token` → see **manage-assets** |
+| **People / portal** | `list_contacts`, `get_contact`, `create_contact` (bridge a person asset via `asset_id`), `update_contact`, `archive_contact`, `restore_contact`, `list_portal_tokens`, `revoke_portal_token` → see **manage-assets** |
 | **Knowledge base (wiki)** | `wiki_list`, `wiki_read`, `wiki_search`, `wiki_write`, `wiki_append` → see **manage-knowledge-base** |
 | **Audit log** (read-only) | `list_audit_log`, `get_audit_entry` |
 | **Tokens** | `list_tokens`, `create_token`, `revoke_token` |
@@ -158,7 +156,7 @@ native granularity.
 ### Guidance is a suggestion, never a verdict
 
 The `guidance` block exists to **draft** a control evaluation faster — seed a gap's severity,
-prefill remediation, drive evidence requests, frame the test procedure. It is **not** a decision.
+prefill remediation, shape what evidence to ask the client for, frame the test procedure. It is **not** a decision.
 Always:
 
 - **Surface the provenance.** Tell the consultant whether a value is `authored`, `projected`, or
@@ -180,62 +178,55 @@ that its guidance will be sparse (mostly `null` / `projected`) so most fields ar
 
 ## Solicitudes (collection workflow)
 
-**Collect evidence with a collection session.** In the Sekit console, open the client's gap
-analysis and use **Collect evidence**: it starts a collection session (Solicitud) for that one
-analysis, and the client answers in their portal with Sekura. There is no consultant MCP tool
-that starts a session; send the consultant to the console for it. Once one is open, you can
-share it: `list_collection_sessions(client_organization_id)` lists the client's Solicitudes
-(open first), and `mint_portal_token(client_organization_id, contact_id,
-collection_session_id)` adds a contact as a recipient of an open one and returns their portal
-link. Every portal link belongs to a Solicitud; there is no client-wide link. See
-**manage-assets**.
+A **Solicitud** (collection session) is the only way to ask a client for evidence. It belongs
+to one gap analysis or readiness review, carries the asks that analysis still needs, and the
+client answers in their portal with Sekura: what they upload is graded against the controls of
+the analysis the Solicitud serves and lands as evaluation, evidence and (when the Solicitud
+flags risks) risk Agent updates for the consultant to review (see **Agent updates** and
+**Bandeja** below). Uploaded files also appear in `list_client_files`. The grading already
+links a graded file as `client_file` evidence on the evaluation it backs, so check
+`list_evidence` before adding `create_evidence` rows yourself (see
+**manage-evidence-and-deliverables**).
 
-**Evidence requests** ("solicitudes") are the older per-ask records: upload a document
-(`kind="upload_evidence"`) or confirm a task is done (`kind="confirm_task"`). Their lifecycle
-spans your side and the client's portal:
+What this surface offers:
 
-1. **Create** a request (`create_evidence_request`; `kind` + `title` required) — it lands
-   **`pending`** with **no email**. The portal does not list a standalone request, so prefer a
-   collection session when the client needs to see the ask in the portal.
-   Requests that `generate_evidence_requests` creates from a gap analysis
-   are different: the first wave (`wave_size`, default 8) is released **and emailed by the
-   generation call itself**, and the rest start `queued` until `release_wave` promotes them.
-   Editing metadata (title, due date, contact, status) is `update_evidence_request`.
-2. **Release** it (`release_evidence_request` for a pending request, `release_wave` to promote
-   queued ones) — this **REACHES THE CLIENT**: stamps `released_at` and (on a fresh release)
-   emails the assigned contact a magic link. A request with no assigned contact can't be
-   released — assign one first via `update_evidence_request`.
-3. The **client submits** through the portal. You read what came back with
-   `get_evidence_request` (full timeline + submissions) and `get_submission_markdown` (the
-   extracted text of one submission).
-4. **Review** the submission (`review_evidence_request`) with a `verdict` — `accepted`,
-   `correction_requested`, or `rejected`. A `correction_requested` / `rejected` verdict
-   **requires a non-blank `reason` (shown to the client)**; `accepted` does not.
-5. `archive_evidence_request` / `restore_evidence_request` were retired from the connector
-   (with the rest of the legacy evidence-request tools); a request cannot be archived or
-   restored here.
+- **Starting one is a console action.** The consultant opens the client's analysis in the
+  Sekit console and uses **Collect evidence**. There is no consultant MCP tool that starts a
+  Solicitud; when none is open, send the consultant to the console and stop there.
+- **`list_collection_sessions(client_organization_id)`** lists the client's Solicitudes, open
+  first then closed, with the analysis each one serves, `due_date`, `delivery` (`email` or
+  `link`), `closed`, its recipients and progress.
+- **`mint_portal_token(client_organization_id, contact_id, collection_session_id)`** shares an
+  open Solicitud with a contact: adds them as a recipient and returns their portal link, once.
+  **CLIENT-FACING:** on a Solicitud delivered by email, a newly added recipient is emailed the
+  link. Confirm the person and the Solicitud with the consultant before sharing. The contact
+  must be live — sharing with an archived contact returns `not_found`, so restore the contact
+  first. Every portal link belongs to a Solicitud; there is no client-wide link. Details in
+  **manage-assets**.
 
-**The client-facing tools** — `release_evidence_request` and `release_wave` — **reach the
-client** (portal visibility + email). Treat each as an egress action: confirm the client,
-contact, and content before firing, exactly like an approve/archive (see Safety).
+**Retired surfaces — never call, never suggest.** Evidence requests (`*_evidence_request*`
+and their lifecycle), evidence packages (`*_evidence_package*`), request threads and release
+waves were removed from Sekit in October 2026. They are not on the connector; a host that
+still shows one of those names has a stale catalog (disconnect and reconnect). The Solicitud
+above replaces them all.
 
-**Deterministic request generation (no AI):** to turn a completed gap analysis's eligible
-control evaluations into pending requests, use `generate_evidence_requests` (tune with
-`wave_size` / `due_date` / `client_contact_id` / `assignee_asset_id`, and `control_evaluation_ids`
-to curate WHICH controls — **omit it for all eligible, pass `[]` for none**). The old
-`instantiate_evidence_plan` tool was retired 2026-07-20. See
-**manage-evidence-and-deliverables** for the full operating guide.
+### Agent updates — reviewing what agents wrote
 
-### Deprecated: packages and threads
-
-Evidence packages and request threads are deprecated as of plugin v0.10.0 and are being
-removed from Sekit. The tools may still appear on the connector, but **do not call them** and
-do not suggest them to the consultant: `list_evidence_packages`, `get_evidence_package`,
-`create_evidence_package`, `update_evidence_package`, `release_evidence_package`,
-`close_evidence_package`, `reopen_evidence_package`, `set_evidence_request_package`,
-`post_thread_message`, and `list_thread`. Collect evidence with a collection session instead.
-To tell the client what is wrong with a submission, use the `reason` on a
-`correction_requested` or `rejected` verdict.
+Every write an agent makes to a client — Sekura grading a portal upload, a workflow, or an
+external agent through this MCP (your own writes included) — is recorded as an **Agent update**
+awaiting the consultant's review. `list_agent_updates(client_organization_id)` returns the
+pending ones (`review_status` `pending_review` by default, or `all` / `reverted`): the subject
+changed (`ControlEvaluation` | `Risk` | `Evidence`), who changed it and the agent's reasoning.
+`approve_agent_updates(client_organization_id, update_ids)` (or `all: true`) marks them
+reviewed, exactly as **Mark reviewed** does in the console — a governance action: call it only
+when the consultant explicitly asks. Two refusal shapes to expect: an id that is unknown,
+already discarded or another client's refuses the **whole call** before anything changes; once
+the ids are accepted, each update is approved on its own and one that fails is reported as
+`failed` in `outcomes` while the rest go through. Pass either `update_ids` or `all: true`,
+never both; each call handles at most 100 updates (the oldest 100 with `all`) and returns
+`pending_remaining`. Loop while it is above zero and the last call approved something: a
+`failed` update stays pending, so a call that approves nothing means stop and report. A bulk
+approval is still batch work under Safety — summarize and get the go-ahead first.
 
 ### Bandeja triage — reviewing agent proposals
 
@@ -246,6 +237,8 @@ awaiting a human decision (each enriched with the agent's `reasoning` and the ci
 CE's full history with `get_control_evaluation_activity` (the merged agent-proposal + human-
 decision timeline), then decide with `approve_control_evaluation` or `reject_control_evaluation`
 (**reject requires a `reason`**). See **evaluate-controls** for the triage subsection.
+Readiness rows never appear under an inbox filter: for a readiness Solicitud, read
+`list_agent_updates` instead.
 
 ## Result + error shapes (no exceptions — read the value)
 
@@ -287,7 +280,7 @@ lists; **`restore_*`** brings it back. Any member may archive and restore risks,
 evaluations, gap analyses, evidence, artifacts, client files, assets, asset links, contacts,
 and custom controls and frameworks. Only
 `list_clients` offers `archived=true`; the other listers return kept rows only, so an archived
-risk, asset, or request is invisible until restored. Prefer archive over treating data as
+risk or asset is invisible until restored. Prefer archive over treating data as
 gone.
 
 ## Tenancy, authorization, and audit guarantees
@@ -333,6 +326,6 @@ These tools mutate a live consultant platform. Before any **create / update / ap
 | Prepare a client for certification: walk every requirement in three work states | **run-gap-analysis** (`evaluation_mode="readiness"`) |
 | Draft and deliver a GDPR Art. 30 ROPA (RAT / record of processing activities) | **generate-ropa** |
 | Read/write the per-client knowledge base (wiki) | **manage-knowledge-base** |
-| Attach evidence, upload files, manage + approve deliverables | **manage-evidence-and-deliverables** |
-| Register people / vendors / systems, set criticality + owner, link assets to risks/gaps/controls/requests | **manage-assets** |
-| Make a person contactable / assignable, share a Solicitud with them (portal access), or revoke a portal link | **manage-assets** |
+| Attach evidence, follow a Solicitud's uploads, upload files, manage + approve deliverables | **manage-evidence-and-deliverables** |
+| Register people / vendors / systems, set criticality + owner, link assets to risks/gaps/controls | **manage-assets** |
+| Make a person contactable, share a Solicitud with them (portal access), or revoke a portal link | **manage-assets** |

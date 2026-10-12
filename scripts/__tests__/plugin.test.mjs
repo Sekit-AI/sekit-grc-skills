@@ -178,8 +178,12 @@ test('analyze-risks writes risk statements, not copied gap labels (SK-736)', () 
   assert.match(summary[0], /\*\*analyze-risks\*\*/, 'the summary field points at the risk-statement contrast');
 });
 
-test('skills name package and thread tools only to deprecate them (SK-584)', () => {
-  const deprecated = [
+test('no skill names a tool Sekit retired (SK-584 packages + threads, SK-749 evidence requests)', () => {
+  // Sekit removed these from the consultant MCP (packages + threads in SK-584, the whole
+  // evidence-request lifecycle in SK-749). A skill that still names one teaches an agent to
+  // call a tool that does not exist. The retirement notes name the families as globs
+  // (`*_evidence_request*`), never a concrete tool name.
+  const retired = [
     'list_evidence_packages',
     'get_evidence_package',
     'create_evidence_package',
@@ -190,25 +194,27 @@ test('skills name package and thread tools only to deprecate them (SK-584)', () 
     'set_evidence_request_package',
     'post_thread_message',
     'list_thread',
+    'list_evidence_requests',
+    'create_evidence_request',
+    'get_evidence_request',
+    'get_submission_markdown',
+    'update_evidence_request',
+    'review_evidence_request',
+    'release_evidence_request',
+    'archive_evidence_request',
+    'restore_evidence_request',
+    'generate_evidence_requests',
+    'release_wave',
+    'instantiate_evidence_plan',
   ];
-  const tool = new RegExp(`\\b(?:${deprecated.join('|')})\\b`, 'g');
-  const warning = /deprecated|do not call|never call/i;
-
-  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
-  const section = guide.match(/\n### Deprecated: packages and threads\n([\s\S]*?)(?=\n#{1,3} |$)/);
-  assert.ok(section, 'sekit-mcp-guide must carry the deprecation section');
-  for (const name of deprecated) assert.ok(section[1].includes(`\`${name}\``), `${name} must be listed as deprecated`);
-
+  const tool = new RegExp(`\\b(?:${retired.join('|')})\\b`);
+  // Positive control: a broken escape would make the negative check pass vacuously.
+  assert.match('call `create_evidence_request` now', tool);
+  assert.doesNotMatch('`create_evidence_request_v2`', tool);
   for (const skillName of readdirSync(skillsRoot)) {
     const source = readFileSync(resolve(skillsRoot, skillName, 'SKILL.md'), 'utf8');
-    // A table row stands alone; any other block runs to the next blank line.
-    const blocks = source.split(/\n\s*\n/).flatMap((block) =>
-      block.trimStart().startsWith('|') ? block.split('\n') : [block],
-    );
-    for (const block of blocks) {
-      const names = block.match(tool);
-      if (names) assert.match(block, warning, `${skillName} names ${names.join(', ')} outside a deprecation note`);
-    }
+    const hit = source.match(tool);
+    assert.equal(hit, null, `${skillName} names retired tool ${hit?.[0]}`);
   }
 });
 

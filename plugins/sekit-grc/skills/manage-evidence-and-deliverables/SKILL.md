@@ -1,19 +1,18 @@
 ---
 name: manage-evidence-and-deliverables
-description: "Attach evidence, run the evidence-collection workflow (collection sessions and evidence requests), and manage files and deliverables for a Sekit client over the consultant MCP. Link evidence to a risk or control evaluation, request evidence from a client and review their submissions, upload client files and artifacts via the two-step presigned flow, and govern deliverables from draft to approved. Use when the user wants to back a risk or control with evidence, ask a client for a document (an evidence request or solicitud), review a submission, release a wave of queued requests, generate evidence requests from a gap analysis, upload a document or screenshot for a Sekit client, produce or track a deliverable such as a gap report, policy, risk register, ROPA, or IR plan, approve or revert a deliverable, or manage a client's files. Read the sekit-mcp-guide skill first."
+description: "Attach evidence, follow the evidence-collection workflow (Solicitudes, the client portal and the agent proposals they produce), and manage files and deliverables for a Sekit client over the consultant MCP. Link evidence to a risk or control evaluation, follow what a client uploads through a Solicitud and turn accepted proof into evidence, upload client files and artifacts via the two-step presigned flow, and govern deliverables from draft to approved. Use when the user wants to back a risk or control with evidence, ask a client for a document (a Solicitud), check what a client has sent, upload a document or screenshot for a Sekit client, produce or track a deliverable such as a gap report, policy, risk register, ROPA, or IR plan, approve or revert a deliverable, or manage a client's files. Read the sekit-mcp-guide skill first."
 ---
 
 # Manage evidence + deliverables
 
 Three related jobs over the Sekit consultant MCP: **(A) evidence** — linking proof to a risk or
 control evaluation; **(B) files + deliverables** — uploading client files and producing,
-governing, and approving artifacts; and **(C) solicitudes** — the client-facing collection
-workflow (ask a client for evidence and review what comes back). Read **sekit-mcp-guide** first.
+governing, and approving artifacts; and **(C) Solicitudes** — the client-facing collection
+workflow (ask a client for evidence and follow what comes back). Read **sekit-mcp-guide** first.
 
 > **A vs C — don't confuse them.** `create_evidence` (A) records that a *thing you already
-> have* proves a verdict. An **evidence request / solicitud** (C) *asks the client to produce*
-> that thing. Collection (C) is the front half; attaching the result as evidence (A) is the
-> back half.
+> have* proves a verdict. A **Solicitud** (C) *asks the client to produce* that thing.
+> Collection (C) is the front half; attaching the result as evidence (A) is the back half.
 
 ## A. Evidence
 
@@ -111,93 +110,51 @@ a file — the old blob is purged). Review with `list_artifacts` / `get_artifact
 > Approval is a real governance action. Only approve when the user explicitly tells you to, and
 > confirm the artifact + client first (see Safety in sekit-mcp-guide).
 
-## C. Solicitudes (collection sessions + evidence requests)
+## C. Solicitudes (the collection workflow)
 
-The collection workflow: **ask the client for evidence** and **review** what comes back.
-Several tools here **reach the client** (portal visibility + email) — they are marked
-**CLIENT-FACING** below and must be treated as egress: confirm the client, the assigned
-contact, and the content before firing.
+A **Solicitud** (collection session) is the only way to ask a client for evidence. It belongs
+to one gap analysis or readiness review and carries the asks that analysis still needs; the
+client answers in their portal with Sekura. One tool here **reaches the client** — it is marked
+**CLIENT-FACING** and must be treated as egress: confirm the client, the person, and the
+Solicitud before firing.
 
-> **Packages and threads are deprecated.** Do not call `list_evidence_packages`,
-> `get_evidence_package`, `create_evidence_package`, `update_evidence_package`,
-> `release_evidence_package`, `close_evidence_package`, `reopen_evidence_package`,
-> `set_evidence_request_package`, `post_thread_message`, or `list_thread`, even if the
-> connector still lists them. They are being removed from Sekit (see sekit-mcp-guide).
+### Asking: start in the console, share over MCP
 
-### Which way to ask
+- **Start a Solicitud → the console.** The consultant opens the analysis in the Sekit console
+  and uses **Collect evidence**; the Solicitud asks for the evidence that analysis still needs.
+  No consultant MCP tool starts one. When no Solicitud is open, say so and point the consultant
+  to the console — do not improvise an ask through another channel.
+- **Find the open one →** `list_collection_sessions(client_organization_id)` (open first, then
+  closed; each with the analysis it serves, `due_date`, `delivery`, `closed`, recipients and
+  progress).
+- **Give a person access →** `mint_portal_token(client_organization_id, contact_id,
+  collection_session_id)` (**CLIENT-FACING**): adds the contact as a recipient of that open
+  Solicitud and returns their portal link once; on a Solicitud delivered by email a newly added
+  recipient is emailed the link. The contact must be live — sharing with an archived contact
+  returns `not_found`, so restore the contact first. Mechanics in **manage-assets**.
 
-- **Collect evidence for an analysis →** a **collection session** (Solicitud). The consultant
-  starts it in the Sekit console from the gap analysis (**Collect evidence**); the client then
-  answers in their portal with Sekura. No consultant MCP tool starts a session, so point the
-  consultant to the console. To give another person access to an open one, share it with
-  `mint_portal_token(client_organization_id, contact_id, collection_session_id)` (see
-  **manage-assets**).
-- **One-off ask →** `create_evidence_request`. Use it for an ad-hoc "please upload X" or
-  "confirm you did Y". `kind` is `upload_evidence` (a document) or `confirm_task` (a
-  done-check); `title` is required. It lands **`pending`** (there is no draft state) with **no
-  email**, and the portal does not list a standalone request; `release_evidence_request`
-  emails the assigned contact a magic link. Optionally link it to a
-  control evaluation or gap analysis (`control_evaluation_id` / `gap_analysis_id`,
-  same-client), assign a contact, or set a due date. Edit later with `update_evidence_request`
-  (title, instructions, due date, contact, or a legal `status` move).
-- **Requests for a whole analysis, without a session →** `generate_evidence_requests` (see
-  D). The first wave is released and emailed by the generation call; the rest wait `queued`
-  for `release_wave`.
+### Following what comes back
 
-### Releasing (CLIENT-FACING)
+- The client's uploads are graded by Sekura against the controls of the analysis the
+  Solicitud serves and land as **Agent updates** — evaluation, evidence and (when the Solicitud
+  flags risks) risk proposals waiting for the consultant's review: `list_agent_updates` shows
+  all of them. For a gap analysis the Bandeja lens `list_control_evaluations(inbox="pending")`
+  shows the proposed verdicts too; readiness rows never appear under an inbox filter, so for a
+  readiness Solicitud read `list_agent_updates` only. The consultant decides in the console or,
+  on explicit instruction, through `approve_agent_updates` / `approve_control_evaluation` /
+  `reject_control_evaluation` (see **sekit-mcp-guide** and **evaluate-controls**).
+- Every uploaded file is a client file: `list_client_files` / `get_client_file` /
+  `get_client_file_markdown` (extracted text) show what arrived. The grading already links a
+  graded file as `client_file` evidence on the evaluation it backs, and `create_evidence` does
+  not deduplicate, so check `list_evidence` (or the `Evidence` Agent updates) first and use
+  section A only for a risk or evaluation the grading did not link.
+- There is no MCP tool to tell the client what is wrong with an upload; the consultant does
+  that from the Solicitud in the console, or directly. Never promise the client a message you
+  cannot send.
 
-An ad-hoc request sends no email until you **release** it. Other paths email the client on
-their own, so never promise silence beyond that request: `generate_evidence_requests` emails
-its first wave inside the generation call; the scheduled nudge sweep sends reminders; and
-until packages are removed from Sekit, a `review_evidence_request` verdict on a request in an
-older package can still email the package's next queued asks.
-The release tools, by what they act on:
-
-- **`release_evidence_request`** (CLIENT-FACING) — «Enviar al cliente» for ONE request that is
-  already `pending` or `correction_requested`: stamps `released_at` and sends the magic-link
-  email. It does not promote `queued` rows.
-- **`release_wave`** (CLIENT-FACING) — the "Liberar ahora" action for **queued** requests:
-  promotes the next queued rows (oldest wave/position first) to fill the client's active
-  window (default 8 concurrent), or one full batch when `force=true`; each promoted request
-  triggers its release email.
-- A release with **no assigned contact is refused** (`validation_error`) — assign one first
-  (`update_evidence_request`). Releases are **idempotent**: a second call on an
-  already-released request is a clean no-op (no second email).
-
-### The review-verdict loop
-
-Once the client submits, read the result (`get_evidence_request` for the full timeline +
-submissions; `get_submission_markdown` for one submission's extracted text), then record your
-verdict with **`review_evidence_request`**:
-
-- `verdict` is `accepted`, `correction_requested`, or `rejected`.
-- `submission_id` names **which** submission you're judging (from the request's `submissions`
-  array).
-- **`correction_requested` / `rejected` REQUIRE a non-blank `reason`** (shown to the client);
-  `accepted` does not. The verdict must be a legal transition from the request's current status.
-
-The verdict `reason` is how you tell the client what to fix; do not use the deprecated thread
-tools. Once a submission is accepted, close the loop back to section A:
-attach it as evidence with `create_evidence(kind="client_file", ...)` so the verdict it backs
-is provable.
-
-`archive_evidence_request` / `restore_evidence_request` were retired from the connector (with
-the rest of the legacy evidence-request tools); a request cannot be archived or restored here.
-
-### Generating requests directly from a gap analysis
-
-There is no MCP tool that builds a themed evidence plan (the old `instantiate_evidence_plan`
-was retired 2026-07-20); for a guided collection, use a collection session. What remains here
-is the deterministic per-control request generator:
-
-- **`generate_evidence_requests(client_organization_id, gap_analysis_id, ...)`** — turns the
-  analysis's eligible control evaluations into pending requests (no AI). Every field is optional
-  (a bare call generates from ALL eligible CEs). Tune with `wave_size` (how many to open this
-  batch), `due_date` (ISO `YYYY-MM-DD`, shared by the batch), `client_contact_id` /
-  `assignee_asset_id` (routing), and **`control_evaluation_ids`** to curate WHICH controls.
-  **The `control_evaluation_ids` distinction is load-bearing: OMIT the field to generate from
-  ALL eligible CEs; pass an explicit `[]` to generate NONE.** (Omitting ≠ empty array — don't
-  send `[]` when you mean "all".)
+**Retired:** evidence requests, evidence packages, request threads and release waves were
+removed from Sekit in October 2026 (see **sekit-mcp-guide** § Solicitudes). Do not call or
+suggest any `*_evidence_request*`, `*_evidence_package*`, thread or wave tool.
 
 ## Constraints
 
@@ -206,15 +163,9 @@ is the deterministic per-control request generator:
 - Artifacts land `draft`; lifecycle fields are server-controlled; any member may call
   `approve_artifact`.
 - `handling` required for confidential / strictly_confidential artifacts.
-- Collect evidence for an analysis with a collection session, started from the console.
-- An ad-hoc `create_evidence_request` lands **`pending`** and is not listed in the portal; its
-  email goes out only when you `release_evidence_request` it (`generate_evidence_requests`
-  emails its first wave by itself). A release with no assigned contact is refused.
-- Package and thread tools are deprecated: never call them.
-- `list_evidence_requests` returns `{evidence_requests, unmatched_submissions}` — the second
-  list holds drop-zone uploads the client sent that are not yet placed on any request. Read it;
-  evidence the client already provided is easy to miss otherwise.
-- `review_evidence_request` `correction_requested` / `rejected` **require a `reason`**;
-  `release_evidence_request` and `release_wave` are **client-facing** (portal + email).
-- `generate_evidence_requests`: OMIT `control_evaluation_ids` for all eligible, pass `[]` for
-  none.
+- Ask a client for evidence only through a Solicitud, started from the console; over MCP you
+  list and share one (`mint_portal_token` is **client-facing**: portal access + email on an
+  email-delivered Solicitud, and refuses an archived contact with `not_found`).
+- What the client uploads arrives as client files plus Agent updates; approving a proposal is
+  the consultant's decision, never a default.
+- Retired evidence-request, package, thread and wave tools: never call them.

@@ -1,21 +1,21 @@
 ---
 name: manage-assets
-description: "Register and maintain a Sekit client's asset inventory over the consultant MCP: people, third parties, and systems, each with a criticality and an owner. Create, update, and archive assets, and link an asset to the risks, gap analyses, control evaluations, or evidence requests it concerns with a role of owner, affected, processor, or custodian. Also manage the people facet: bridge a person asset to a client contact, give that contact portal access by sharing one of the client's open Solicitudes (collection sessions), and list or revoke their portal links. Use whenever the user wants to add or edit a client's people, vendors, or systems, set an asset owner or criticality, decide who owns or is affected by a piece of work, connect assets to the items that reference them, make a person contactable or assignable, give a client person portal access or share a Solicitud with them, or revoke a portal link. Framework-agnostic. Read the sekit-mcp-guide skill first."
+description: "Register and maintain a Sekit client's asset inventory over the consultant MCP: people, third parties, and systems, each with a criticality and an owner. Create, update, and archive assets, and link an asset to the risks, gap analyses, or control evaluations it concerns with a role of owner, affected, processor, or custodian. Also manage the people facet: bridge a person asset to a client contact, give that contact portal access by sharing one of the client's open Solicitudes (collection sessions), and list or revoke their portal links. Use whenever the user wants to add or edit a client's people, vendors, or systems, set an asset owner or criticality, decide who owns or is affected by a piece of work, connect assets to the items that reference them, make a person contactable, give a client person portal access or share a Solicitud with them, or revoke a portal link. Framework-agnostic. Read the sekit-mcp-guide skill first."
 ---
 
 # Manage assets
 
 Build and maintain a client's **asset inventory** — the register of people, third parties, and
 systems a GRC engagement is fundamentally about — and the **links** from that inventory to the
-risks, gaps, control evaluations, and evidence requests it concerns. All over the Sekit
+risks, gaps, and control evaluations it concerns. All over the Sekit
 consultant MCP. Read **sekit-mcp-guide** first — connection, the `whoami → list_clients`
 orientation protocol, error/result shapes, and the safety rules all apply here.
 
 ## When to use
 
 The user wants to register or edit a client's people / vendors / systems, set an asset's owner or
-criticality, or make the relationship between an asset and some work (a risk, a gap, a control,
-an evidence request) explicit. You are the consultant's hands — propose, they decide. Ground the
+criticality, or make the relationship between an asset and some work (a risk, a gap, a control)
+explicit. You are the consultant's hands — propose, they decide. Ground the
 inventory in what's actually known about the client (the wiki, declared facts, uploaded files);
 don't invent assets.
 
@@ -28,10 +28,10 @@ don't invent assets.
   client** (e.g. the System "Prod DB" is owned by the Person "Alice, CISO"). It must be a person,
   in the same client, not the asset itself, and not archived.
 - **Links are separate from owner.** `asset_links` connect an asset to a **work item** — a
-  `Risk`, `GapAnalysis`, `ControlEvaluation`, or `EvidenceRequest` — with a `role`
+  `Risk`, `GapAnalysis`, or `ControlEvaluation` — with a `role`
   (`owner` / `affected` / `processor` / `custodian`). This is "link now"; it does not change the
   risk methodology. Use a link to say "this System is *affected* by that Risk" or "this Person is
-  the *owner* (assignee) for that evidence request".
+  the *owner* of that control evaluation's remediation".
 
 ## Process
 
@@ -88,8 +88,8 @@ first, then create systems / third parties and set their `owner_asset_id` to the
 |---|---|
 | `client_organization_id` | from `list_clients` |
 | `asset_id` | an asset in **this** client (from `list_assets`) |
-| `linkable_type` | `Risk` \| `ControlEvaluation` \| `GapAnalysis` \| `EvidenceRequest` (the work item's class name) |
-| `linkable_id` | that record's `id` (from `list_risks` / `list_gap_analyses` / `list_control_evaluations` / the request) |
+| `linkable_type` | `Risk` \| `ControlEvaluation` \| `GapAnalysis` (the work item's class name) |
+| `linkable_id` | that record's `id` (from `list_risks` / `list_gap_analyses` / `list_control_evaluations`) |
 | `role` | `owner` \| `affected` \| `processor` \| `custodian` |
 
 Both the asset **and** the linked record must belong to the same client. There can be one
@@ -115,11 +115,10 @@ label.
 
 ## The people facet — contacts + portal access
 
-A **person asset** is the canonical identity. To make that person *contactable* (assignable to
-evidence requests) or to give them **portal access** (so they can answer a Solicitud and submit
+A **person asset** is the canonical identity. To make that person *contactable* or to give them **portal access** (so they can answer a Solicitud and submit
 evidence through the client portal), they need a **client contact** — the portal/comms facet of
-the person asset. The contact is bridged to the asset by `asset_id`; portal links and request
-assignment attach to the contact, never to the bare asset.
+the person asset. The contact is bridged to the asset by `asset_id`; portal links attach to the
+contact, never to the bare asset.
 
 ### Bridge a person to a contact
 
@@ -158,7 +157,8 @@ Solicitudes.
   recipient_added, emailed}`. `portal_url` is the ready-to-send link, returned **only here and
   only once** (valid 14 days): hand it to the client and never persist it. `id` is the portal
   token id that `revoke_portal_token` takes. Any consultant may share. A closed or unknown
-  Solicitud is a `not_found` error.
+  Solicitud is a `not_found` error, and so is an **archived contact** — restore the contact
+  first (`restore_contact`), then share.
 - **It can email the client.** On a Solicitud with `delivery: "email"`, a **newly added**
   recipient is emailed the link (`emailed: true`). Re-sharing with someone who already receives
   it returns a fresh link and sends no email (`emailed: false`). Confirm the person and the
@@ -188,7 +188,7 @@ or tell the consultant it was emailed when `emailed` is true.
   `owner` / `affected` / `processor` / `custodian` — exact values.
 - `owner_asset_id` must resolve to a **person** asset in the **same client**, not the asset
   itself, and not archived — otherwise a clean 422.
-- `linkable_type` must be one of the four allowed classes; the asset and the linked record must
+- `linkable_type` must be one of the three allowed classes; the asset and the linked record must
   share the client (a cross-client or wrong id is a clean error, not a crash).
 - Bridging a contact needs an **email-bearing person** asset — emailless → 422, non-person → 404.
   `mint_portal_token` (sharing a Solicitud) is any-consultant and needs an **open** Solicitud of
