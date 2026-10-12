@@ -1,6 +1,6 @@
 ---
 name: generate-ropa
-description: "Draft and deliver a GDPR Art. 30 Record of Processing Activities (ROPA / RAT, 'registro de actividades de tratamiento') for a Sekit client over the consultant MCP. Gathers what Sekit already knows (wiki, assets, contacts, gap analysis), collects the rest from the client via solicitudes, drafts one entry per processing activity with the Art. 30(1)/(2) fields, and ships it as a governed artifact (kind ropa) linked as evidence on the GDPR 30.1/30.2 controls. Use when the user asks for a ROPA, a RAT, a record/register of processing activities, Art. 30 compliance, or to close a GDPR gap on records of processing. Read the sekit-mcp-guide skill first."
+description: "Draft and deliver a GDPR Art. 30 Record of Processing Activities (ROPA / RAT, 'registro de actividades de tratamiento') for a Sekit client over the consultant MCP. Gathers what Sekit already knows (wiki, assets, contacts, gap analysis), collects the documents it lacks through a Solicitud and the per-activity facts through the consultant's own intake, drafts one entry per processing activity with the Art. 30(1)/(2) fields, and ships it as a governed artifact (kind ropa) linked as evidence on the GDPR 30.1/30.2 controls. Use when the user asks for a ROPA, a RAT, a record/register of processing activities, Art. 30 compliance, or to close a GDPR gap on records of processing. Read the sekit-mcp-guide skill first."
 ---
 
 # Generate a ROPA (GDPR Art. 30)
@@ -34,26 +34,19 @@ Start from what Sekit already knows, then ask the client only for what's missing
 
 **Missing facts → ask the client, don't guess:**
 
-1. **Existing documents → a collection session.** A session started from a GDPR gap analysis
-   in the Sekit console (**Collect evidence**) asks the client for the evidence its
-   evaluations still need. It does not ask for the per-activity facts below, and no consultant
-   MCP tool starts one.
-2. **Per-activity facts → one evidence request per topic** with `create_evidence_request`,
-   linked to the client contact (`client_contact_id`) and, when a GDPR gap analysis exists, to its 30.1
-   control evaluation (`control_evaluation_id`) so the answer lands as evidence where the gap
-   is. Ask, per activity: purpose; categories of people and of data (flag special
-   categories); who receives the data (processors, third parties); transfers outside the EU
-   and under what safeguard; how long data is kept; the security measures that protect it.
-3. **Send each request with `release_evidence_request`** (CLIENT-FACING: it emails the contact
-   a magic link). Confirm the contact and the wording with the consultant first. A new request
-   sends nothing until released.
-4. Read replies with `get_evidence_request` and `get_submission_markdown`. When an answer is
-   incomplete, record a `correction_requested` verdict with `review_evidence_request`; its
-   `reason` tells the client what is missing.
-
-Do not use evidence packages or request threads (`create_evidence_package`,
-`set_evidence_request_package`, `release_evidence_package`, `post_thread_message`, and the rest):
-they are deprecated and being removed (see sekit-mcp-guide).
+1. **Existing documents → a Solicitud.** A collection session started from a GDPR gap analysis
+   in the Sekit console (**Collect evidence**) asks the client, in their portal, for the
+   evidence its evaluations still need (privacy policy, processor contracts, retention
+   schedule…). No consultant MCP tool starts one; once open, `list_collection_sessions` finds
+   it and `mint_portal_token` shares it with the privacy owner (CLIENT-FACING, see
+   manage-evidence-and-deliverables). What they upload lands as client files and Agent updates.
+2. **Per-activity facts → the consultant's intake.** Purpose; categories of people and of data
+   (flag special categories); who receives the data (processors, third parties); transfers
+   outside the EU and under what safeguard; how long data is kept; the security measures that
+   protect it. There is no MCP tool that asks a client a question, so give the consultant the
+   question list per activity to run in their meeting or email, and record the answers in the
+   wiki (`wiki_write`, e.g. `privacy/ropa_intake.md`) so the draft is grounded and reviewable.
+3. **Unanswered facts stay `OPEN:`** in the draft (see below) — never fill a cell from a guess.
 
 ## 2. DRAFT
 
@@ -121,6 +114,7 @@ Drafting rules:
 - Facts come from the client or from Sekit records; unconfirmed cells are `OPEN:` items.
 - Controller vs processor role decides 30(1) vs 30(2); both sections when both roles apply.
 - `classification="confidential"` ⇒ `handling` required on the artifact.
-- A new evidence request reaches the client only once released; replies land as submissions.
-- Never call the deprecated package or thread tools.
+- Documents come through a Solicitud (console-started, shared over MCP); facts come from the
+  consultant's intake recorded in the wiki. Retired evidence-request, package and thread tools
+  are never called.
 - Approval only when the user says so; new versions supersede, they don't overwrite.

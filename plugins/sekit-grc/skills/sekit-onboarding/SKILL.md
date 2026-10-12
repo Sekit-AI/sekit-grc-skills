@@ -22,8 +22,8 @@ plain language.
 ## Explain Sekit in one useful paragraph
 
 Sekit is a workspace for cybersecurity and GRC consultants. It keeps each client's context,
-assets, risks, frameworks, control evaluations, evidence requests, conversations, and governed
-deliverables together. This plugin lets the consultant ask their AI host to work with that
+assets, risks, frameworks, control evaluations, Solicitudes (client evidence collection), the
+client portal, and governed deliverables together. This plugin lets the consultant ask their AI host to work with that
 information through Sekit's consultant connector. Reads stay tenant-scoped and writes are
 audited; the
 consultant remains responsible for judgments, approvals, and anything sent to a client.
@@ -35,7 +35,7 @@ Expand only the capability area relevant to the user's goal:
 | Understand a client | Build reusable context in the client wiki and inventory people, vendors, and systems | `manage-knowledge-base`, `manage-assets` |
 | Assess posture or a standard | Scope a framework, evaluate assessable controls, record gaps, and use the crosswalk | `run-gap-analysis`, `evaluate-controls` |
 | Manage risk | Build and maintain a risk register with likelihood, impact, ownership, and evidence | `analyze-risks` |
-| Collect proof from a client | Start a collection session or send evidence requests, review submissions, and link accepted evidence | `manage-evidence-and-deliverables` |
+| Collect proof from a client | Share a Solicitud with the client's people, follow what they upload, review the agent proposals, and link accepted evidence | `manage-evidence-and-deliverables` |
 | Produce client work | Upload, review, approve, supersede, and archive governed deliverables | `manage-evidence-and-deliverables` |
 | Prepare a GDPR ROPA | Gather processing activities and produce a governed Article 30 record | `generate-ropa` |
 
@@ -83,11 +83,12 @@ paste a raw PAT into the conversation.
 Recommend one small, reversible outcome instead of launching a whole engagement:
 
 - **New client:** create or select the client, then capture a one-paragraph wiki overview.
-- **Existing client:** summarize current risks, open gap analyses, or outstanding evidence
-  requests with read-only calls.
+- **Existing client:** summarize current risks, open gap analyses, or open Solicitudes and
+  pending Agent updates with read-only calls.
 - **Framework-led engagement:** list available frameworks and compare guidance coverage before
   creating a gap analysis.
-- **Evidence collection:** inspect pending and queued requests before releasing anything.
+- **Evidence collection:** list the client's open Solicitudes and their recipients before
+  sharing anything; starting a Solicitud happens in the Sekit console.
 - **ROPA:** confirm the client and source material before drafting processing activities.
 
 After the first outcome, recap what was learned or created and offer the next specialist
