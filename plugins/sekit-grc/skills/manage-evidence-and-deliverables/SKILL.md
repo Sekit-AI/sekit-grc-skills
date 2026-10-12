@@ -135,16 +135,19 @@ Solicitud before firing.
 
 ### Following what comes back
 
-- The client's uploads are graded by Sekura against the Solicitud's controls and land as
-  **Agent updates** — evaluation and evidence proposals waiting for the consultant's review
-  (`list_agent_updates`; the Bandeja lens `list_control_evaluations(inbox="pending")` for the
-  proposed verdicts). The consultant decides in the console or, on explicit instruction,
-  through `approve_agent_updates` / `approve_control_evaluation` / `reject_control_evaluation`
-  (see **sekit-mcp-guide** and **evaluate-controls**).
+- The client's uploads are graded by Sekura against the controls of the analysis the
+  Solicitud serves and land as **Agent updates** — evaluation, evidence and (when the Solicitud
+  flags risks) risk proposals waiting for the consultant's review: `list_agent_updates` shows
+  all of them. For a gap analysis the Bandeja lens `list_control_evaluations(inbox="pending")`
+  shows the proposed verdicts too; readiness rows never appear under an inbox filter, so for a
+  readiness Solicitud read `list_agent_updates` only. The consultant decides in the console or,
+  on explicit instruction, through `approve_agent_updates` / `approve_control_evaluation` /
+  `reject_control_evaluation` (see **sekit-mcp-guide** and **evaluate-controls**).
 - Every uploaded file is a client file: `list_client_files` / `get_client_file` /
-  `get_client_file_markdown` (extracted text) show what arrived. To back a verdict with it
-  yourself, close the loop to section A: `create_evidence(kind="client_file",
-  client_file_id=…)` on the risk or control evaluation it proves.
+  `get_client_file_markdown` (extracted text) show what arrived. The grading already links a
+  graded file as `client_file` evidence on the evaluation it backs, and `create_evidence` does
+  not deduplicate, so check `list_evidence` (or the `Evidence` Agent updates) first and use
+  section A only for a risk or evaluation the grading did not link.
 - There is no MCP tool to tell the client what is wrong with an upload; the consultant does
   that from the Solicitud in the console, or directly. Never promise the client a message you
   cannot send.

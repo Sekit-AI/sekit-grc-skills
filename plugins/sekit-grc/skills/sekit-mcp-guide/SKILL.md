@@ -180,10 +180,13 @@ that its guidance will be sparse (mostly `null` / `projected`) so most fields ar
 
 A **Solicitud** (collection session) is the only way to ask a client for evidence. It belongs
 to one gap analysis or readiness review, carries the asks that analysis still needs, and the
-client answers in their portal with Sekura: what they upload is graded against the controls
-and lands as proposals for the consultant to review (see **Agent updates** and **Bandeja**
-below). Uploaded files also appear in `list_client_files`, so accepted proof can be attached
-as evidence (`create_evidence(kind="client_file", …)`, see **manage-evidence-and-deliverables**).
+client answers in their portal with Sekura: what they upload is graded against the controls of
+the analysis the Solicitud serves and lands as evaluation, evidence and (when the Solicitud
+flags risks) risk Agent updates for the consultant to review (see **Agent updates** and
+**Bandeja** below). Uploaded files also appear in `list_client_files`. The grading already
+links a graded file as `client_file` evidence on the evaluation it backs, so check
+`list_evidence` before adding `create_evidence` rows yourself (see
+**manage-evidence-and-deliverables**).
 
 What this surface offers:
 
@@ -214,10 +217,13 @@ external agent through this MCP (your own writes included) — is recorded as an
 awaiting the consultant's review. `list_agent_updates(client_organization_id)` returns the
 pending ones (`review_status` `pending_review` by default, or `all` / `reverted`): the subject
 changed (`ControlEvaluation` | `Risk` | `Evidence`), who changed it and the agent's reasoning.
-`approve_agent_updates(client_organization_id, update_ids)` marks them reviewed, exactly as
-**Mark reviewed** does in the console — a governance action: call it only when the consultant
-explicitly asks, and read its per-update `outcomes` because one refused id is reported as
-`failed` while the rest still go through.
+`approve_agent_updates(client_organization_id, update_ids)` (or `all: true`) marks them
+reviewed, exactly as **Mark reviewed** does in the console — a governance action: call it only
+when the consultant explicitly asks. Two refusal shapes to expect: an id that is unknown,
+already discarded or another client's refuses the **whole call** before anything changes; once
+the ids are accepted, each update is approved on its own and one that fails is reported as
+`failed` in `outcomes` while the rest go through. A call takes at most 100 ids and returns
+`pending_remaining`; loop while it is above zero.
 
 ### Bandeja triage — reviewing agent proposals
 
@@ -317,4 +323,4 @@ These tools mutate a live consultant platform. Before any **create / update / ap
 | Read/write the per-client knowledge base (wiki) | **manage-knowledge-base** |
 | Attach evidence, follow a Solicitud's uploads, upload files, manage + approve deliverables | **manage-evidence-and-deliverables** |
 | Register people / vendors / systems, set criticality + owner, link assets to risks/gaps/controls | **manage-assets** |
-| Make a person contactable / assignable, share a Solicitud with them (portal access), or revoke a portal link | **manage-assets** |
+| Make a person contactable, share a Solicitud with them (portal access), or revoke a portal link | **manage-assets** |

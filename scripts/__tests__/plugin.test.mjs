@@ -195,6 +195,7 @@ test('no skill names a tool Sekit retired (SK-584 packages + threads, SK-749 evi
     'post_thread_message',
     'list_thread',
     'list_evidence_requests',
+    'create_evidence_request',
     'get_evidence_request',
     'get_submission_markdown',
     'update_evidence_request',
@@ -207,6 +208,9 @@ test('no skill names a tool Sekit retired (SK-584 packages + threads, SK-749 evi
     'instantiate_evidence_plan',
   ];
   const tool = new RegExp(`\\b(?:${retired.join('|')})\\b`);
+  // Positive control: a broken escape would make the negative check pass vacuously.
+  assert.match('call `create_evidence_request` now', tool);
+  assert.doesNotMatch('`create_evidence_request_v2`', tool);
   for (const skillName of readdirSync(skillsRoot)) {
     const source = readFileSync(resolve(skillsRoot, skillName, 'SKILL.md'), 'utf8');
     const hit = source.match(tool);

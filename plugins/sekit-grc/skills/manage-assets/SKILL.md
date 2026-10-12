@@ -1,6 +1,6 @@
 ---
 name: manage-assets
-description: "Register and maintain a Sekit client's asset inventory over the consultant MCP: people, third parties, and systems, each with a criticality and an owner. Create, update, and archive assets, and link an asset to the risks, gap analyses, or control evaluations it concerns with a role of owner, affected, processor, or custodian. Also manage the people facet: bridge a person asset to a client contact, give that contact portal access by sharing one of the client's open Solicitudes (collection sessions), and list or revoke their portal links. Use whenever the user wants to add or edit a client's people, vendors, or systems, set an asset owner or criticality, decide who owns or is affected by a piece of work, connect assets to the items that reference them, make a person contactable or assignable, give a client person portal access or share a Solicitud with them, or revoke a portal link. Framework-agnostic. Read the sekit-mcp-guide skill first."
+description: "Register and maintain a Sekit client's asset inventory over the consultant MCP: people, third parties, and systems, each with a criticality and an owner. Create, update, and archive assets, and link an asset to the risks, gap analyses, or control evaluations it concerns with a role of owner, affected, processor, or custodian. Also manage the people facet: bridge a person asset to a client contact, give that contact portal access by sharing one of the client's open Solicitudes (collection sessions), and list or revoke their portal links. Use whenever the user wants to add or edit a client's people, vendors, or systems, set an asset owner or criticality, decide who owns or is affected by a piece of work, connect assets to the items that reference them, make a person contactable, give a client person portal access or share a Solicitud with them, or revoke a portal link. Framework-agnostic. Read the sekit-mcp-guide skill first."
 ---
 
 # Manage assets
@@ -89,7 +89,7 @@ first, then create systems / third parties and set their `owner_asset_id` to the
 | `client_organization_id` | from `list_clients` |
 | `asset_id` | an asset in **this** client (from `list_assets`) |
 | `linkable_type` | `Risk` \| `ControlEvaluation` \| `GapAnalysis` (the work item's class name) |
-| `linkable_id` | that record's `id` (from `list_risks` / `list_gap_analyses` / `list_control_evaluations` / the request) |
+| `linkable_id` | that record's `id` (from `list_risks` / `list_gap_analyses` / `list_control_evaluations`) |
 | `role` | `owner` \| `affected` \| `processor` \| `custodian` |
 
 Both the asset **and** the linked record must belong to the same client. There can be one

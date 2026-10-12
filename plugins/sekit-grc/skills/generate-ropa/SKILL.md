@@ -43,9 +43,11 @@ Start from what Sekit already knows, then ask the client only for what's missing
 2. **Per-activity facts → the consultant's intake.** Purpose; categories of people and of data
    (flag special categories); who receives the data (processors, third parties); transfers
    outside the EU and under what safeguard; how long data is kept; the security measures that
-   protect it. There is no MCP tool that asks a client a question, so give the consultant the
-   question list per activity to run in their meeting or email, and record the answers in the
-   wiki (`wiki_write`, e.g. `privacy/ropa_intake.md`) so the draft is grounded and reviewable.
+   protect it. No MCP tool asks a client a question. In the console the consultant can add a
+   free-text ask to the open Solicitud (**Añadir petición**) or leave a note that Sekura relays
+   in the portal; otherwise they run the questions in their meeting or email. Give them the
+   question list per activity, and record the answers in the wiki (`wiki_write`, under the
+   `evidence/` prefix, e.g. `evidence/ropa_intake.md`) so the draft is grounded and reviewable.
 3. **Unanswered facts stay `OPEN:`** in the draft (see below) — never fill a cell from a guess.
 
 ## 2. DRAFT
@@ -78,7 +80,7 @@ Drafting rules:
 - The two *where possible* fields (erasure limits, TOMs) are qualified in the regulation —
   incomplete is acceptable there; everything else is mandatory per entry.
 - Mark every unconfirmed cell `OPEN: <question>` and keep a closing "Puntos abiertos" list —
-  the follow-up solicitud comes straight from it.
+  the follow-up asks on the Solicitud (console, **Añadir petición**) come straight from it.
 - Art. 30(5) exempts <250-employee orgs only when processing is *occasional*, involves no
   special categories (Art. 9) or criminal-offence data (Art. 10), and poses no risk to
   people's rights — in practice almost no operating SME qualifies. Note it if
