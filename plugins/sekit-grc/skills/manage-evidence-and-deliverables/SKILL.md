@@ -152,7 +152,9 @@ Solicitud before firing.
   ask in its column (`still_needed`, `needs_review`, `covered`, `client_cant`, `not_needed`):
   report what is still missing and what waits for review.
   `get_collection_session_ask(..., ask_id)` opens one ask with its controls, their current
-  verdicts and the agent changes it produced and their review state.
+  verdicts and the agent changes it produced and their review state. Reviewing or undoing a
+  change from the ask stays in the console; Mark reviewed over MCP is `approve_agent_updates`
+  with ids from `list_agent_updates`, never the ask's own ids.
   `get_collection_session(...)` is the header alone (due date, delivery, `flag_risks`,
   recipients).
 - **What the client said →** `list_collection_session_conversations(client_organization_id,
@@ -191,8 +193,9 @@ suggest any `*_evidence_request*`, `*_evidence_package*`, thread or wave tool.
   `approve_artifact`.
 - `handling` required for confidential / strictly_confidential artifacts.
 - Ask a client for evidence only through a Solicitud, started from the console; over MCP you
-  preview, read (session, board, asks, conversations) and share one (`mint_portal_token` is **client-facing**: portal access + email on an
-  email-delivered Solicitud, and refuses an archived contact with `not_found`).
+  preview, read (session, board, asks, conversations) and share one (`mint_portal_token` is
+  **client-facing**: portal access + email on an email-delivered Solicitud, and refuses an
+  archived contact with `not_found`).
 - What the client uploads arrives as client files plus Agent updates; approving a proposal is
   the consultant's decision, never a default.
 - Retired evidence-request, package, thread and wave tools: never call them.

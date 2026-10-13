@@ -81,11 +81,10 @@ create it with `create_client` (only `name` is required) and use the `id` it ret
 The host may prefix tool names. Read-only listers/getters are safe to call freely;
 **create / update / approve / archive tools write real, audited data** — see Safety.
 
-Names as shipped (v0.13.0): the Solicitud preview is `get_collection_preview` and the reverse
-crosswalk lookup is `get_reverse_control_mappings` (the SK-810 ticket proposed a preview of
-collection asks and a reverse lookup of a control under other names; those names were never
-registered). Mapping relation and rationale come from `get_control_mappings`; `get_control`
-is unchanged.
+Use these exact names: the Solicitud preview is `get_collection_preview`, the reverse
+crosswalk lookup is `get_reverse_control_mappings`, and mapping relation and rationale come
+from `get_control_mappings` (`get_control` does not carry them). No other spelling exists on
+the connector.
 
 | Domain | Tools |
 |---|---|
@@ -248,8 +247,10 @@ Reading a Solicitud's status needs no console. All read-only, all scoped by
 - **`get_collection_session_ask(client_organization_id, collection_session_id, ask_id)`** —
   one ask in detail: its card, the controls it covers with their current verdicts, and every
   change an agent wrote for it (graded evaluations, raised risks) with its review state.
-  Undoing a change stays in the console; marking it reviewed is `approve_agent_updates` (below),
-  only on explicit instruction.
+  Read-only: reviewing or undoing a change from the ask stays in the console. The ids it shows
+  are board ids, not Agent update ids; the MCP route to Mark reviewed is
+  `approve_agent_updates` with ids from `list_agent_updates` (below), only on explicit
+  instruction.
 - **`list_collection_session_conversations(client_organization_id, collection_session_id)`**
   — `{conversations: [...]}`, one per recipient who opened the Solicitud: who they are and the
   messages they exchanged with the portal assistant.
@@ -299,13 +300,14 @@ Sekura's background runs (the runs the console lists for the firm) are readable,
   `{agent_run: null}` when it never ran.
 - **`list_agent_runs(client_organization_id)`** — `{agent_runs: [...]}`, newest first, with
   `id`, `status`, `agentKind`, `actionKind`, `triggerLabel` (what triggered it), when it
-  started, proposed and closed, `candidateCount`, token usage and `failureReason`. These keys
-  are camelCase, unlike the rest of the surface.
+  started, proposed and closed, `candidateCount`, token usage and `failureReason`.
 - **`get_agent_run(client_organization_id, agent_run_id)`** — one run in full: its summary,
   each agent thread (role, agent, status, token usage, event timeline) and the coordinator's
   proposal (links with rationale, reasoning).
 
-Launching or re-instructing a run spends credits and stays in the console.
+Both agent-run reads return camelCase keys (`agentKind`, `triggerLabel`, `agentSlug`,
+`inputTokens`), unlike the rest of the surface; read them as returned. Launching or
+re-instructing a run spends credits and stays in the console.
 
 ### Bandeja triage — reviewing agent proposals
 

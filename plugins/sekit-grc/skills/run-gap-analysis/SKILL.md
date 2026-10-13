@@ -178,8 +178,9 @@ When the consultant or an auditor asks *why* a verdict carries over, read the cr
 reasoning instead of asserting it:
 
 - **Forward:** `get_control_mappings(rcf_id, to_framework="iso_27001")` gives each mapping's
-  `relation` (how closely the target control matches) and `rationale`. Read the relation
-  before projecting a verdict: a loose match is a reason to check the target control natively.
+  `relation` (how closely the target control matches) and `rationale`. Quote the relation
+  and rationale when projecting a verdict; when they don't show the target control is covered
+  as written, check it natively instead.
 - **Reverse:** `get_reverse_control_mappings(framework="iso_27001", code="A.8.13")` lists
   every Sekit CSF control that maps to that requirement (`mapped_from`), so you can answer
   "which of our verdicts cover A.8.13?" from the analysis's evaluations.
