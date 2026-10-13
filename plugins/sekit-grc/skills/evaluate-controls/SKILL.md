@@ -40,6 +40,14 @@ evaluation from — see **sekit-mcp-guide** for the full shape and the provenanc
 Everything in `guidance` is a **suggestion the consultant confirms**, never a verdict — apply
 the provenance-surfacing and null-honesty rules from **sekit-mcp-guide** to every value below.
 
+**Crosswalk rationale.** A row's `mappings` says where an RCF control lands in other
+frameworks. To explain *how closely and why*, call `get_control_mappings(rcf_id,
+to_framework?)`: each mapping's `relation` and `rationale` (empty when none is written yet; say
+so). Starting from a native requirement instead (an auditor asks about ISO `A.8.13`),
+`get_reverse_control_mappings(framework, code)` returns every RCF control that maps to it.
+Both are global reads with no `client_organization_id` (details in **sekit-mcp-guide** § The
+crosswalk).
+
 ## Required fields
 
 | Field | Notes |
@@ -168,7 +176,11 @@ readiness walk's progress is readable over MCP the normal way.
    agent-reasoning filter).
 2. **`get_control_evaluation_activity(client_organization_id, control_evaluation_id)`** — the
    merged, newest-first timeline of agent proposals and human decisions for ONE CE — "who
-   decided this and on what basis?". (`get_control_evaluation` fetches the row itself.)
+   decided this and on what basis?". (`get_control_evaluation` fetches the row itself.) For
+   what the fields said before, `list_control_evaluation_versions(client_organization_id,
+   control_evaluation_id)` lists its snapshots (who wrote each: `actor_kind`, `agent_run_id`)
+   and `get_control_evaluation_version(..., snapshot_id)` shows one; an `agent_run_id` opens
+   the run that wrote it in `get_agent_run`. Reverting a version stays in the console.
 3. Decide:
    - **`approve_control_evaluation(client_organization_id, control_evaluation_id)`** — sets
      `approval_status` to `approved`. Idempotent.

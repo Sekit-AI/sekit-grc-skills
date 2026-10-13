@@ -219,6 +219,11 @@ evidenceable_id=<risk id>, kind=..., ...)`. See **manage-evidence-and-deliverabl
 
 - `approve_risk` / `unapprove_risk` — any member of the team; only when the user explicitly approves.
 - `archive_risk` / `restore_risk` — soft-delete / undo. Any member, like the approvals.
+- History: `list_risk_versions(client_organization_id, risk_id)` lists the risk's snapshots,
+  newest first, with who wrote each (`actor_kind` `human`, `agent` or `service`; an
+  `agent_run_id` opens in `get_agent_run`); `get_risk_version(..., snapshot_id)` shows one as
+  it was. Read them before updating a risk an agent or a colleague changed. Reverting to an
+  older version stays in the console.
 
 ## Constraints (the validator will reject otherwise)
 

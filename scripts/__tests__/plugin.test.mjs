@@ -218,6 +218,41 @@ test('no skill names a tool Sekit retired (SK-584 packages + threads, SK-749 evi
   }
 });
 
+test('the guide teaches every SK-810 read under its registered name', () => {
+  // SK-810 registered these read-only consultant tools. Two shipped under names other than
+  // the ticket proposed, and those proposals were never registered, so no skill may name them.
+  const reads = [
+    'get_collection_session',
+    'get_collection_session_board',
+    'get_collection_session_ask',
+    'list_collection_session_conversations',
+    'get_collection_preview',
+    'get_portal_conversation',
+    'list_reports',
+    'get_report',
+    'get_report_markdown',
+    'list_risk_versions',
+    'get_risk_version',
+    'list_control_evaluation_versions',
+    'get_control_evaluation_version',
+    'get_gap_analysis_run',
+    'list_agent_runs',
+    'get_agent_run',
+    'get_control_mappings',
+    'get_reverse_control_mappings',
+  ];
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+  for (const name of reads) {
+    assert.match(guide, new RegExp(`\`${name}[\`(]`), `sekit-mcp-guide must name ${name}`);
+  }
+  const unregistered = /\b(?:preview_collection_asks|reverse_lookup_control)\b/;
+  for (const skillName of readdirSync(skillsRoot)) {
+    const source = readFileSync(resolve(skillsRoot, skillName, 'SKILL.md'), 'utf8');
+    const hit = source.match(unregistered);
+    assert.equal(hit, null, `${skillName} names unregistered tool ${hit?.[0]}`);
+  }
+});
+
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
   assert.ok(existsSync(artifact), 'npm test must build dist/sekit-grc.plugin first');
   assert.doesNotThrow(() => execFileSync('unzip', ['-tq', artifact], { stdio: 'pipe' }));

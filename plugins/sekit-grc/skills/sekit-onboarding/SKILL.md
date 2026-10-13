@@ -88,7 +88,8 @@ Recommend one small, reversible outcome instead of launching a whole engagement:
 - **Framework-led engagement:** list available frameworks and compare guidance coverage before
   creating a gap analysis.
 - **Evidence collection:** list the client's open Solicitudes and their recipients before
-  sharing anything; starting a Solicitud happens in the Sekit console.
+  sharing anything, and read a Solicitud's board (`get_collection_session_board`) to show what
+  is still missing; starting a Solicitud happens in the Sekit console.
 - **ROPA:** confirm the client and source material before drafting processing activities.
 
 After the first outcome, recap what was learned or created and offer the next specialist

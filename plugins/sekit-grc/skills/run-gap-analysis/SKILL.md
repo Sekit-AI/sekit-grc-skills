@@ -126,7 +126,9 @@ consultant confirm:
   `estimated_effort`, `current_tier`/`target_tier` (0–4), `owner_type`
   (`consultant`/`client_internal`/`external_specialist`), `confidence`, `notes`.
 - What to ask the client for, from `guidance.evidence_expectation` (collected through a
-  Solicitud, see manage-evidence-and-deliverables).
+  Solicitud, see manage-evidence-and-deliverables). `get_collection_preview(client_organization_id,
+  gap_analysis_id)` shows the asks a Solicitud for this analysis would request before the
+  consultant starts one in the console.
 
 Every guidance-derived value is a **suggestion the consultant confirms**, never a verdict (the
 provenance / null rules in **sekit-mcp-guide** apply). See **evaluate-controls** for the XOR-leg
@@ -148,10 +150,17 @@ generate a deliverable (**manage-evidence-and-deliverables**).
 Readiness rows come back from the same call, so the walk's progress is readable over MCP the
 same way. They never appear in the Bandeja: readiness work is tracked, not signed off.
 
-**The reports themselves are generated in the Sekit console, not over MCP.** No tool in the
-consultant server produces a gap report or a readiness plan. When the walk is done, tell the
-consultant to open the analysis in the console and press Generate report — over a readiness
-analysis that produces the certification-readiness plan, the document they hand the client.
+`get_gap_analysis_run(client_organization_id, gap_analysis_id)` says whether Sekura has run on
+this analysis and with what `status` (`{agent_run: null}` when it never ran); open the run with
+`get_agent_run` to see what it proposed. Launching a run stays in the console.
+
+**Reports are generated in the Sekit console and read over MCP.** No tool produces a gap
+report or a readiness plan: when the walk is done, tell the consultant to open the analysis in
+the console and press Generate report — over a readiness analysis that produces the
+certification-readiness plan, the document they hand the client. Once it is `ready`, read it
+yourself: `list_reports(client_organization_id)` for the version (`is_stale` means the analysis
+changed since; suggest regenerating), then `get_report_markdown(client_organization_id,
+report_id)` for the document (see **sekit-mcp-guide** § Reports).
 
 ### 7. Complete
 
@@ -164,6 +173,19 @@ Don't re-run per framework by default. A Sekit-CSF gap analysis already carries 
 use `list_controls(framework="iso_27001")` (etc.) and the RCF `mappings` to present the same
 verdicts under another standard. Re-cut natively only when the client needs a framework's own
 control granularity.
+
+When the consultant or an auditor asks *why* a verdict carries over, read the crosswalk's
+reasoning instead of asserting it:
+
+- **Forward:** `get_control_mappings(rcf_id, to_framework="iso_27001")` gives each mapping's
+  `relation` (how closely the target control matches) and `rationale`. Read the relation
+  before projecting a verdict: a loose match is a reason to check the target control natively.
+- **Reverse:** `get_reverse_control_mappings(framework="iso_27001", code="A.8.13")` lists
+  every Sekit CSF control that maps to that requirement (`mapped_from`), so you can answer
+  "which of our verdicts cover A.8.13?" from the analysis's evaluations.
+
+Both are global reads (no `client_organization_id`; optional `locale` `en` or `es`). An empty
+`rationale` means none has been written yet: say so rather than inventing one.
 
 ## Constraints
 
