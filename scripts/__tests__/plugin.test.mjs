@@ -272,6 +272,8 @@ test("a person's write applies directly and is not an Agent update (SK-853)", ()
   assert.match(rules, /not an Agent\s+update/);
   assert.match(rules, /vía Claude/);
   assert.match(rules, /vía token/);
+  assert.match(rules, /«<client> \(OAuth\)»/);
+  assert.doesNotMatch(guide, /line in \*\*Agent updates\*\*/);
   assert.match(rules, /Sekura/);
   assert.match(rules, /agent user/);
   assert.match(rules, /sign-off is not a permission/);

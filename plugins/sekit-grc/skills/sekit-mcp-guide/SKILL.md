@@ -280,10 +280,11 @@ Who waits for review follows the **user's kind**, not the channel.
 A **person's** write through this MCP — OAuth (Claude or another host) or a personal access
 token — or in the console is that person's and **applies directly**. It is not an Agent
 update, and `list_agent_updates` does not return it. Registro and the record's Historial show
-the email and the channel: «<email> · vía Claude» when the OAuth client is named Claude, or
-«<email> · vía token <name>» for a personal token (the English console says "via" and "via
-token"). Credencial reads «Claude (OAuth)» or the token's name; a console session reads
-«Sesión de consola» / "Console session" and has no channel suffix. A person's
+the email and the channel: «<email> · vía <client>» — «vía Claude» when that OAuth client is
+named Claude — or «<email> · vía token <name>» for a personal token (the English console says
+"via" and "via token"). Credencial reads «<client> (OAuth)» — «Claude (OAuth)» when the client
+is named Claude — or the token's name. A console session reads «Sesión de consola» / "Console
+session" and has no channel suffix. A person's
 `import_control_evaluations` is the same edit: it applies directly, `summary` replaces the
 field, and no agent reasoning is stored. A personal-token write from before this change was
 stamped as an agent; Registro reads that row as the person.
@@ -371,9 +372,10 @@ Every risk and control evaluation keeps versioned snapshots:
   `{versions: [...]}`, newest first: each version's id (the `snapshot_id`), whether it is
   current, who wrote it (`actor_kind` `human`, `agent` or `service`; `actor_name`,
   `agent_slug`, `agent_run_id`) and when. An `agent_run_id` opens in `get_agent_run`. A
-  person's version is `actor_kind` `human` with `actor_name` their email; `agent_slug` on that
-  snapshot is `oauth:<client>` (for example `oauth:Claude`) or the token's name, which
-  Historial renders as the «vía …» line in **Agent updates**. A console edit has no channel.
+  person's version is `actor_kind` `human` with `actor_name` their email. On that snapshot
+  `agent_slug` is `oauth:<client>` (for example `oauth:Claude`) or the token's name, and
+  Historial renders it as «<email> · vía <client>» or «<email> · vía token <name>», the same
+  line Registro shows. That write is not an Agent updates row. A console edit has no channel.
 - **`get_risk_version(client_organization_id, risk_id, snapshot_id)`** /
   **`get_control_evaluation_version(client_organization_id, control_evaluation_id,
   snapshot_id)`** — one version as it was then: its fields and the evidence ids linked at that
