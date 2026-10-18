@@ -36,8 +36,8 @@ Do not mint or paste a PAT when the host supports Sekit's OAuth flow.
 ### Personal Access Token (hosts that accept custom headers)
 
 1. In Sekit, open **`/app/settings` → AI connections → Personal Access Tokens → create**.
-   Name the token after the host, not a client; the default expiry is 90 days. The raw token is
-   shown once.
+   Name the token after the host, not a client; a name may not start with `oauth:`. The default
+   expiry is 90 days. The raw token is shown once.
 2. Add a custom connector named `sekit-consultant` with the production URL and this header:
 
    ```text
@@ -98,7 +98,7 @@ the connector.
 | **Evidence** | `list_evidence`, `get_evidence`, `create_evidence`, `update_evidence`, `archive_evidence`, `restore_evidence` → see **manage-evidence-and-deliverables** |
 | **Solicitudes (collection sessions)** | `list_collection_sessions`, `get_collection_session`, `get_collection_session_board`, `get_collection_session_ask`, `list_collection_session_conversations`, `get_collection_preview`, `get_portal_conversation` (all read-only); `mint_portal_token` (shares a Solicitud with a contact; client-facing) → see **Solicitudes** below and **manage-assets** |
 | **Agent runs** (read-only) | `list_agent_runs`, `get_agent_run` → see **Agent runs** below |
-| **Agent updates** (review inbox for agent writes) | `list_agent_updates`, `approve_agent_updates` (Mark reviewed; only on explicit instruction) → see **Agent updates** below |
+| **Agent updates** (review inbox for Sekura, workflows, and agent users; a person's own writes are not here) | `list_agent_updates`, `approve_agent_updates` (Mark reviewed; only on explicit instruction) → see **Agent updates** below |
 | **Artifacts / deliverables** | `list_artifacts`, `get_artifact`, `prepare_artifact_upload`, `create_artifact_from_upload`, `update_artifact`, `approve_artifact`, `revert_artifact_approval`, `archive_artifact`, `restore_artifact` → see **manage-evidence-and-deliverables** |
 | **Reports** (read-only) | `list_reports`, `get_report`, `get_report_markdown` → see **Reports** below |
 | **Client files** | `list_client_files`, `get_client_file`, `get_client_file_markdown`, `download_client_file`, `prepare_client_file_upload`, `create_client_file_from_upload`, `update_client_file`, `archive_client_file`, `restore_client_file` |
@@ -275,21 +275,45 @@ above replaces them all.
 
 ### Agent updates — reviewing what agents wrote
 
-Every write an agent makes to a client — Sekura grading a portal upload, a workflow, or an
-external agent through this MCP (your own writes included) — is recorded as an **Agent update**
-awaiting the consultant's review. `list_agent_updates(client_organization_id)` returns the
-pending ones (`review_status` `pending_review` by default, or `all` / `reverted`): the subject
-changed (`ControlEvaluation` | `Risk` | `Evidence`), who changed it and the agent's reasoning.
+Who waits for review follows the **user's kind**, not the channel.
+
+A **person's** write through this MCP — OAuth (Claude or another host) or a personal access
+token — or in the console is that person's and **applies directly**. It is not an Agent
+update, and `list_agent_updates` does not return it. Registro and the record's Historial show
+the email and the channel: «<email> · vía <client>» — «vía Claude» when that OAuth client is
+named Claude — or «<email> · vía token <name>» for a personal token (the English console says
+"via" and "via token"). Credencial reads «<client> (OAuth)» — «Claude (OAuth)» when the client
+is named Claude — or the token's name. A console session reads «Sesión de consola» / "Console
+session" and has no channel suffix. A person's
+`import_control_evaluations` is the same edit: it applies directly, `summary` replaces the
+field, and no agent reasoning is stored. A personal-token write from before this change was
+stamped as an agent; Registro reads that row as the person.
+
+Agent updates are the changes **agents** made that still wait for the consultant:
+
+- **Sekura** — chat writes, and grading of what a client uploads through a Solicitud. The
+  entry records the person who asked. Portal uploads keep that review.
+- **Workflows.**
+- An **agent user** (a user whose kind is agent), on every channel: through this MCP, and
+  through the console or REST.
+
+`list_agent_updates(client_organization_id)` returns the pending ones (`review_status`
+`pending_review` by default, or `all` / `reverted`): the subject changed (`ControlEvaluation`
+| `Risk` | `Evidence`), the trigger and `agent_slug` that made it, and the agent's reasoning
+when it gave one.
+
 `approve_agent_updates(client_organization_id, update_ids)` (or `all: true`) marks them
-reviewed, exactly as **Mark reviewed** does in the console — a governance action: call it only
-when the consultant explicitly asks. Two refusal shapes to expect: an id that is unknown,
-already discarded or another client's refuses the **whole call** before anything changes; once
-the ids are accepted, each update is approved on its own and one that fails is reported as
-`failed` in `outcomes` while the rest go through. Pass either `update_ids` or `all: true`,
-never both; each call handles at most 100 updates (the oldest 100 with `all`) and returns
-`pending_remaining`. Loop while it is above zero and the last call approved something: a
-`failed` update stays pending, so a call that approves nothing means stop and report. A bulk
-approval is still batch work under Safety — summarize and get the go-ahead first.
+reviewed, exactly as **Mark reviewed** does in the console. That sign-off is not a permission:
+any consultant may give it, including on a change of their own. It is still a governance
+action — call it only when the consultant explicitly asks. Two refusal shapes to expect: an id
+that is unknown, already discarded or another client's refuses the **whole call** before
+anything changes; once the ids are accepted, each update is approved on its own and one that
+fails is reported as `failed` in `outcomes` while the rest go through. Pass either
+`update_ids` or `all: true`, never both; each call handles at most 100 updates (the oldest 100
+with `all`) and returns `pending_remaining`. Loop while it is above zero and the last call
+approved something: a `failed` update stays pending, so a call that approves nothing means
+stop and report. A bulk approval is still batch work under Safety — summarize and get the
+go-ahead first.
 
 ### Agent runs — what Sekura did in the background
 
@@ -347,7 +371,11 @@ Every risk and control evaluation keeps versioned snapshots:
   **`list_control_evaluation_versions(client_organization_id, control_evaluation_id)`** —
   `{versions: [...]}`, newest first: each version's id (the `snapshot_id`), whether it is
   current, who wrote it (`actor_kind` `human`, `agent` or `service`; `actor_name`,
-  `agent_slug`, `agent_run_id`) and when. An `agent_run_id` opens in `get_agent_run`.
+  `agent_slug`, `agent_run_id`) and when. An `agent_run_id` opens in `get_agent_run`. A
+  person's version is `actor_kind` `human` with `actor_name` their email. On that snapshot
+  `agent_slug` is `oauth:<client>` (for example `oauth:Claude`) or the token's name, and
+  Historial renders it as «<email> · vía <client>» or «<email> · vía token <name>», the same
+  line Registro shows. That write is not an Agent updates row. A console edit has no channel.
 - **`get_risk_version(client_organization_id, risk_id, snapshot_id)`** /
   **`get_control_evaluation_version(client_organization_id, control_evaluation_id,
   snapshot_id)`** — one version as it was then: its fields and the evidence ids linked at that
@@ -431,7 +459,10 @@ These tools mutate a live consultant platform. Before any **create / update / ap
 - For batch work (a full risk register, a whole gap worklist), **summarize the plan and get a
   go-ahead** before firing dozens of writes.
 - Approvals and archives are governance actions — never approve/archive on the user's behalf
-  without explicit intent.
+  without explicit intent. Mark reviewed is a sign-off any consultant may give, including on
+  a change of their own.
+- A person's create, update, import, or archive through this connector applies directly. It
+  is not queued in Agent updates. Only Sekura, workflows, and agent users wait there.
 - Prefer idempotent shapes: risks key on a unique `external_id` per client (the server
   assigns `R-NNN` when you omit it); control evaluations are
   one-per-control-per-gap-analysis. Check the existing list before creating to avoid
