@@ -39,7 +39,9 @@ Start from what Sekit already knows, then ask the client only for what's missing
    evidence its evaluations still need (privacy policy, processor contracts, retention
    schedule…). No consultant MCP tool starts one; once open, `list_collection_sessions` finds
    it and `mint_portal_token` shares it with the privacy owner (CLIENT-FACING, see
-   manage-evidence-and-deliverables). What they upload lands as client files and Agent updates.
+   manage-evidence-and-deliverables). What they upload is graded by Sekura and lands as client
+   files and Agent updates. The consultant's own writes through this connector apply directly
+   and are not Agent updates.
 2. **Per-activity facts → the consultant's intake.** Purpose; categories of people and of data
    (flag special categories); who receives the data (processors, third parties); transfers
    outside the EU and under what safeguard; how long data is kept; the security measures that

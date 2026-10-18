@@ -106,7 +106,8 @@ On a **readiness** analysis:
 
 `summary` — **the sentence the client-facing report prints for this control.** Write it as a
 finished statement a consultant would sign: what is missing and on what basis. The consultant can
-rewrite it in the console, and a re-import never overwrites an edited one. Gap wording belongs
+rewrite it in the console. A person's re-import replaces `summary`; an agent user's import seeds
+it and does not overwrite a consultant's existing edit. Gap wording belongs
 here ("No evidence of offline backups"). A risk drawn from this gap is written differently, as a
 harmful event plus its condition and impact, never as a copy of this sentence — see
 **analyze-risks**.
@@ -116,8 +117,9 @@ Omit it when there is nothing to add. `summary` is what the report reaches for f
 is its fallback: when a control has no `summary`, the finding card prints the `notes` instead. So
 never put anything there you would not want a client to read.
 
-`reasoning` — the full evidence chain. Persisted as immutable AI-provenance next to the
-evaluation, never overwritten, and shown to the consultant beside the summary they are editing.
+`reasoning` — the full evidence chain on an agent user's import. Persisted as one immutable
+agent-reasoning row next to the evaluation, never overwritten, and shown to the consultant
+beside the summary they are editing. A person's import stores no `reasoning`.
 
 `confidence` (`high`/`medium`/`low`), `recommended_remediation`, `estimated_effort`
 (`low`/`medium`/`high`), `current_tier` / `target_tier` (0–4), `owner_type`
@@ -155,8 +157,12 @@ field on a different resource.
    ...)`. See **manage-evidence-and-deliverables**.
 8. **Batch** — for a bulk re-key from an external assessment, `import_control_evaluations`
    takes `evaluations: [...]` (1–200 rows, each with the same leg + `status` +
-   `evidence_source` + `evaluated_at` rules as a single create) and returns what it created
-   plus a `skipped` list (e.g. non-leaf controls) — the result is not 1:1 with the input.
+   `evidence_source` + `evaluated_at` rules as a single create) and returns
+   `{"evaluations": [...], "skipped": [...]}` (non-leaf controls are skipped) — `evaluations`
+   is not 1:1 with the input. A person's import applies directly: it is not an Agent update,
+   `summary` replaces the field, and `reasoning` is not stored. An agent user's import waits
+   in Agent updates and stores one immutable reasoning row; its `summary` does not overwrite
+   a consultant's existing edit. Do not send `approval_status`, `agent_kind`, or `model`.
    Prefer per-control calls when judgement matters.
 
 ## Bandeja triage — reviewing agent proposals

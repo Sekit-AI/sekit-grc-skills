@@ -253,6 +253,50 @@ test('the guide teaches every SK-810 read under its registered name', () => {
   }
 });
 
+test("a person's write applies directly and is not an Agent update (SK-853)", () => {
+  const oldClaim = /your own writes included|external agent through this MCP/;
+  for (const skillName of readdirSync(skillsRoot)) {
+    if (!statSync(resolve(skillsRoot, skillName)).isDirectory()) continue;
+    const source = readFileSync(resolve(skillsRoot, skillName, 'SKILL.md'), 'utf8');
+    const hit = source.match(oldClaim);
+    assert.equal(hit, null, `${skillName} still queues a person's MCP write: ${hit?.[0]}`);
+  }
+
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+  const section = guide.match(
+    /### Agent updates — reviewing what agents wrote\n([\s\S]*?)(?=\n### )/,
+  );
+  assert.ok(section, 'sekit-mcp-guide must keep the Agent updates section');
+  const rules = section[1];
+  assert.match(rules, /applies directly/);
+  assert.match(rules, /not an Agent\s+update/);
+  assert.match(rules, /vía Claude/);
+  assert.match(rules, /vía token/);
+  assert.match(rules, /Sekura/);
+  assert.match(rules, /agent user/);
+  assert.match(rules, /sign-off is not a permission/);
+  assert.match(rules, /including on a change of their own/);
+  assert.doesNotMatch(rules, /cannot approve/);
+
+  for (const name of [
+    'manage-evidence-and-deliverables',
+    'generate-ropa',
+    'sekit-onboarding',
+    'evaluate-controls',
+  ]) {
+    const source = readFileSync(resolve(skillsRoot, name, 'SKILL.md'), 'utf8');
+    assert.match(
+      source,
+      /appl(?:y|ies) directly/,
+      `${name} must say a person's write applies directly`,
+    );
+  }
+
+  const controls = readFileSync(resolve(skillsRoot, 'evaluate-controls/SKILL.md'), 'utf8');
+  assert.match(controls, /person's import stores no `reasoning`/);
+  assert.match(controls, /not an Agent update/);
+});
+
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
   assert.ok(existsSync(artifact), 'npm test must build dist/sekit-grc.plugin first');
   assert.doesNotThrow(() => execFileSync('unzip', ['-tq', artifact], { stdio: 'pipe' }));

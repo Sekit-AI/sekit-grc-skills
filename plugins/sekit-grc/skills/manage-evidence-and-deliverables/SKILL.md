@@ -196,6 +196,7 @@ suggest any `*_evidence_request*`, `*_evidence_package*`, thread or wave tool.
   preview, read (session, board, asks, conversations) and share one (`mint_portal_token` is
   **client-facing**: portal access + email on an email-delivered Solicitud, and refuses an
   archived contact with `not_found`).
-- What the client uploads arrives as client files plus Agent updates; approving a proposal is
-  the consultant's decision, never a default.
+- What the client uploads through a Solicitud arrives as client files plus Agent updates
+  (Sekura's grading); approving a proposal is the consultant's decision, never a default.
+- A person's own write over this connector applies directly and is not an Agent update.
 - Retired evidence-request, package, thread and wave tools: never call them.

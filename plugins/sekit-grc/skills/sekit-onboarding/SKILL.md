@@ -84,7 +84,9 @@ Recommend one small, reversible outcome instead of launching a whole engagement:
 
 - **New client:** create or select the client, then capture a one-paragraph wiki overview.
 - **Existing client:** summarize current risks, open gap analyses, or open Solicitudes and
-  pending Agent updates with read-only calls.
+  pending Agent updates with read-only calls. Those pending updates are Sekura's, a
+  workflow's, or an agent user's. A person's own connector writes apply directly and are not
+  in that queue.
 - **Framework-led engagement:** list available frameworks and compare guidance coverage before
   creating a gap analysis.
 - **Evidence collection:** list the client's open Solicitudes and their recipients before
