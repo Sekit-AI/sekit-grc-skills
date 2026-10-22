@@ -174,12 +174,14 @@ field on a different resource.
    - **Never both.** A row with a non-null `gap_analysis_id` that also carries the
      `perimeter_id` key, even as `null`, is refused: `Control evaluation is invalid. (row N)`,
      field `perimeter_id`, "cannot be set together with gap_analysis_id". Drop the key when
-     you name the analysis.
+     you name the analysis. A row with `gap_analysis_id: null` and a `perimeter_id` is
+     accepted.
    - **Refusals.** An unknown id, or a perimeter of a sibling company or another
      Organization, reads `Perimeter is invalid. (row N)` with "<id> is not a perimeter of
-     this company"; an archived perimeter reads the same message with "<id> is archived". A
-     non-integer or non-positive value fails with `Control evaluation import is invalid.`
-     N is the 0-based row index, and any refusal rolls back the whole batch.
+     this company"; an archived perimeter reads the same message with "<id> is archived". N
+     is the 0-based row index, and any refusal rolls back the whole batch. Over MCP, a
+     non-integer or non-positive value (`1.5`, `0`, `-1`, `"3"`) is refused before the import
+     runs, as `Invalid arguments for tool "import_control_evaluations".` with no row index.
 
 ## Bandeja triage — reviewing agent proposals
 
