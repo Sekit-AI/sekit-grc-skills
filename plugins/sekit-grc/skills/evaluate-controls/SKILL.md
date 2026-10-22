@@ -181,7 +181,10 @@ field on a different resource.
      this company"; an archived perimeter reads the same message with "<id> is archived". N
      is the 0-based row index, and any refusal rolls back the whole batch. Over MCP, a
      non-integer or non-positive value (`1.5`, `0`, `-1`, `"3"`) is refused before the import
-     runs, as `Invalid arguments for tool "import_control_evaluations".` with no row index.
+     runs, so the message head `Invalid arguments for tool "import_control_evaluations".`
+     has no `(row N)`. The caller reads
+     `(error: validation_error — Invalid arguments for tool "import_control_evaluations". [evaluations.<N>.perimeter_id: …])`,
+     where the field `evaluations.<N>.perimeter_id` gives the 0-based row.
 
 ## Bandeja triage — reviewing agent proposals
 

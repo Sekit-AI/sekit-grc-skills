@@ -312,7 +312,13 @@ test('an import row can name a perimeter, never with a gap analysis (SK-873)', (
   assert.match(controls, /<id> is not a perimeter of\s+this company/);
   assert.match(controls, /<id> is archived/);
   assert.match(controls, /`gap_analysis_id: null` and a `perimeter_id` is\s+accepted/);
-  assert.match(controls, /`Invalid arguments for tool "import_control_evaluations"\.` with no row index/);
+  assert.match(controls, /message head `Invalid arguments for tool "import_control_evaluations"\.`\s+has no `\(row N\)`/);
+  assert.match(
+    controls,
+    /`\(error: validation_error — Invalid arguments for tool "import_control_evaluations"\. \[evaluations\.<N>\.perimeter_id: …\]\)`/,
+  );
+  assert.match(controls, /field `evaluations\.<N>\.perimeter_id` gives the 0-based row/);
+  assert.doesNotMatch(controls, /with no row index/);
   assert.doesNotMatch(controls, /Control evaluation import is invalid/);
   assert.match(controls, /0-based row index/);
   assert.match(controls, /rolls back the whole batch/);
