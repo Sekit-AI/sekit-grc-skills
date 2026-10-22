@@ -299,6 +299,28 @@ test("a person's write applies directly and is not an Agent update (SK-853)", ()
   assert.match(controls, /not an Agent update/);
 });
 
+test('an import row can name a perimeter, never with a gap analysis (SK-873)', () => {
+  const controls = readFileSync(resolve(skillsRoot, 'evaluate-controls/SKILL.md'), 'utf8');
+  assert.match(controls, /`perimeter_id`/);
+  assert.match(controls, /`list_perimeters\(client_organization_id\)`/);
+  assert.match(controls, /whole company/);
+  assert.match(controls, /one imported analysis for its framework and\s+perimeter/);
+  assert.match(controls, /even as `null`/);
+  assert.match(controls, /`Control evaluation is invalid\. \(row N\)`/);
+  assert.match(controls, /cannot be set together with gap_analysis_id/);
+  assert.match(controls, /`Perimeter is invalid\. \(row N\)`/);
+  assert.match(controls, /<id> is not a perimeter of\s+this company/);
+  assert.match(controls, /<id> is archived/);
+  assert.match(controls, /`Control evaluation import is invalid\.`/);
+  assert.match(controls, /0-based row index/);
+  assert.match(controls, /rolls back the whole batch/);
+
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+  const row = guide.match(/^\| \*\*Control evaluations\*\* \|.*$/m);
+  assert.ok(row, 'sekit-mcp-guide must keep the Control evaluations tool row');
+  assert.match(row[0], /`import_control_evaluations` \(a row may carry `perimeter_id`/);
+});
+
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
   assert.ok(existsSync(artifact), 'npm test must build dist/sekit-grc.plugin first');
   assert.doesNotThrow(() => execFileSync('unzip', ['-tq', artifact], { stdio: 'pipe' }));

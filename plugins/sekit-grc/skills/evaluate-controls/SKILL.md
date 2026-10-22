@@ -100,7 +100,8 @@ On a **readiness** analysis:
   status vocabularies above applies to this row.
 - **Omit it** (RCF / native leg only) and Sekit attaches a **synthesized per-(client, framework)
   analysis** so every CE still belongs to one. The custom leg requires its custom-framework gap
-  analysis.
+  analysis. A single create always lands on the whole company; only an import row can name a
+  perimeter (see **Batch** below).
 
 ## Useful optional fields
 
@@ -164,6 +165,20 @@ field on a different resource.
    in Agent updates and stores one immutable reasoning row; its `summary` does not overwrite
    a consultant's existing edit. Do not send `approval_status`, `agent_kind`, or `model`.
    Prefer per-control calls when judgement matters.
+   - **Perimeter.** Send `perimeter_id` (a positive integer from
+     `list_perimeters(client_organization_id)`) on a row to import it into one perimeter of
+     the company; omit it or send `null` for the whole company. A row without
+     `gap_analysis_id` lands on the one imported analysis for its framework and perimeter,
+     created the first time and reused after that.
+   - **Never both.** A row with a non-null `gap_analysis_id` that also carries the
+     `perimeter_id` key, even as `null`, is refused: `Control evaluation is invalid. (row N)`,
+     field `perimeter_id`, "cannot be set together with gap_analysis_id". Drop the key when
+     you name the analysis.
+   - **Refusals.** An unknown id, or a perimeter of a sibling company or another
+     Organization, reads `Perimeter is invalid. (row N)` with "<id> is not a perimeter of
+     this company"; an archived perimeter reads the same message with "<id> is archived". A
+     non-integer or non-positive value fails with `Control evaluation import is invalid.`
+     N is the 0-based row index, and any refusal rolls back the whole batch.
 
 ## Bandeja triage — reviewing agent proposals
 
