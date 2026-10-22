@@ -100,7 +100,8 @@ On a **readiness** analysis:
   status vocabularies above applies to this row.
 - **Omit it** (RCF / native leg only) and Sekit attaches a **synthesized per-(client, framework)
   analysis** so every CE still belongs to one. The custom leg requires its custom-framework gap
-  analysis. A single create always lands on the whole company; only an import row can name a
+  analysis. A single create without `gap_analysis_id` lands on the whole company's analysis;
+  `create_control_evaluation` takes no `perimeter_id`, and only an import row can name a
   perimeter (see **Batch** below).
 
 ## Useful optional fields
