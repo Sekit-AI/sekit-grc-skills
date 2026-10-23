@@ -8,7 +8,8 @@
     "build": "node scripts/build-plugins.mjs",
     "package": "npm run build",
     "test": "npm run build && node --test --test-reporter=spec scripts/__tests__/*.test.mjs",
-    "verify-release": "node scripts/verify-release-version.mjs"
+    "verify-release": "node scripts/verify-release-version.mjs",
+    "release-tag": "node scripts/release-tag.mjs"
   },
   "repository": {
     "type": "git",
