@@ -83,6 +83,11 @@ capability, and a major version for breaking workflow or installation changes.
 Maintainers publish by creating a signed or annotated `vX.Y.Z` tag after the pull request is
 merged. GitHub Actions verifies the tag, rebuilds the archive, and attaches it to the release.
 
+To cut the tag, run `npm run release-tag` once the version bump is on `main`. It fetches
+`origin/main`, reads the version from all three manifests at that commit, refuses if they
+disagree or the tag already exists, then creates the annotated `vX.Y.Z` tag and pushes only that
+tag.
+
 ## Pull requests
 
 Explain the consultant scenario before and after the change, what deliberately did not change,

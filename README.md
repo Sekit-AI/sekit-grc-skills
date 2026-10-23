@@ -148,7 +148,9 @@ connector vulnerabilities through [SECURITY.md](SECURITY.md), not a public issue
 
 This repository is the canonical source for the Sekit GRC plugin. A tag named `vX.Y.Z` must
 match both package and plugin manifest versions; the release workflow validates, builds, and
-attaches `sekit-grc.plugin`, the nine `.skill` files, their convenience ZIP, and checksums. Sekit
+attaches `sekit-grc.plugin`, the nine `.skill` files, their convenience ZIP, and checksums.
+Maintainers cut the tag from `main` with `npm run release-tag`; see
+[CONTRIBUTING.md](CONTRIBUTING.md#versioning). Sekit
 may mirror the Claude artifact at
 `https://sekit.ai/downloads/sekit-grc.plugin` for in-product onboarding.
 
