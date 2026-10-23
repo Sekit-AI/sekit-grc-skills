@@ -13,6 +13,7 @@ host-specific copies of a skill.
 ```sh
 npm test
 npm run verify-release
+npm run release-tag   # maintainers only: tag origin/main as vX.Y.Z and push that tag
 ```
 
 Node.js 20+, `zip`, and `unzip` are required. The project has no npm dependencies.
