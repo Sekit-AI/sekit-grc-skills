@@ -94,13 +94,22 @@ On a **readiness** analysis:
 
 ## Filing into a gap analysis
 
-- Pass **`gap_analysis_id`** (from `create_gap_analysis` / `list_gap_analyses`) to file the
-  verdict into a specific analysis — its framework **must match** this CE's. The leg is fixed at
-  creation. The analysis also carries the **evaluation mode**, which decides which of the two
-  status vocabularies above applies to this row.
-- **Omit it** (RCF / native leg only) and Sekit attaches a **synthesized per-(client, framework)
-  analysis** so every CE still belongs to one. The custom leg requires its custom-framework gap
-  analysis.
+- **`gap_analysis_id`** is required on `create_control_evaluation` and on every
+  `import_control_evaluations` row, for every leg. Sekit never picks or creates an analysis for
+  you. Its framework **must match** this CE's. The leg is fixed at creation. The analysis also
+  carries the **evaluation mode**, which decides which of the two status vocabularies above
+  applies to this row.
+- Get the id from `list_gap_analyses(client_organization_id)`. If the right analysis does not
+  exist, create it with `create_gap_analysis` first (see **run-gap-analysis**), then file into it.
+- A missing or `null` id is refused before anything is written:
+
+  ```
+  (error: validation_error — Invalid arguments for tool "create_control_evaluation". [gap_analysis_id: is required; use the id of one of this client's gap analyses (list_gap_analyses, or create_gap_analysis first)])
+  (error: validation_error — Invalid arguments for tool "import_control_evaluations". [evaluations.<N>.gap_analysis_id: is required; use the id of one of this client's gap analyses (list_gap_analyses, or create_gap_analysis first)])
+  ```
+
+  `<N>` is the 0-based index of the import row that lacks it. Resolve the analysis as above and
+  resend; do not guess an id.
 
 ## Useful optional fields
 
@@ -134,8 +143,9 @@ field on a different resource.
 ## Process
 
 1. **Orient** — `whoami` → `list_clients` → resolve `client_organization_id`.
-2. **Pick the lens and read the mode** — know the gap analysis + framework you're filing
-   under (or let it synthesize). `list_frameworks` if you need the code.
+2. **Pick the lens and read the mode** — pick the gap analysis you're filing under with
+   `list_gap_analyses(client_organization_id)`, or `create_gap_analysis` first when none fits.
+   Its framework is your lens. `list_frameworks` if you need the code.
    `get_gap_analysis` returns **`evaluation_mode`**: on `readiness` the status vocabulary is
    work states and severity is never sent (see **Two vocabularies** above).
 3. **Pull the controls** — `list_controls(framework=...)` (RCF lens, filter required) or
@@ -151,13 +161,16 @@ field on a different resource.
      where the work stands (Completed / In progress / Not started) and send no severity.
    - Pick the XOR leg.
 5. **`create_control_evaluation(...)`** — one per control per gap analysis. On a 422, read the
-   field-level message and fix (usually a severity-vs-status mismatch or an XOR violation).
+   field-level message and fix (usually a severity-vs-status mismatch, an XOR violation, or a
+   missing `gap_analysis_id`).
 6. **Update** with `update_control_evaluation(client_organization_id, <id>, ...)` (PATCH).
 7. **Evidence** — `create_evidence(evidenceable_type="ControlEvaluation", evidenceable_id=<id>,
    ...)`. See **manage-evidence-and-deliverables**.
 8. **Batch** — for a bulk re-key from an external assessment, `import_control_evaluations`
    takes `evaluations: [...]` (1–200 rows, each with the same leg + `status` +
-   `evidence_source` + `evaluated_at` rules as a single create) and returns
+   `evidence_source` + `evaluated_at` rules as a single create). Every row carries its own
+   `gap_analysis_id`, so one batch can span several gap analyses. A row's `framework` follows
+   the single-create rule and never picks the analysis. The call returns
    `{"evaluations": [...], "skipped": [...]}` (non-leaf controls are skipped) — `evaluations`
    is not 1:1 with the input. A person's import applies directly: it is not an Agent update,
    `summary` replaces the field, and `reasoning` is not stored. An agent user's import waits

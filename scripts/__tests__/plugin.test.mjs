@@ -299,6 +299,40 @@ test("a person's write applies directly and is not an Agent update (SK-853)", ()
   assert.match(controls, /not an Agent update/);
 });
 
+test('every control-evaluation write names its gap analysis (SK-873)', () => {
+  // Sekit no longer files an evaluation without a gap analysis into a catch-all one it creates.
+  const synthesized = /\bsynthesi[sz](?:e|ed|es|ing)\b|Imported control evaluations|no gap analysis specified/i;
+  assert.match('Sekit attaches a synthesized per-(client, framework) analysis', synthesized);
+  assert.doesNotMatch('`analysis/` (risks, synthesis)', synthesized);
+  for (const skillName of readdirSync(skillsRoot)) {
+    if (!statSync(resolve(skillsRoot, skillName)).isDirectory()) continue;
+    const source = readFileSync(resolve(skillsRoot, skillName, 'SKILL.md'), 'utf8');
+    const hit = source.match(synthesized);
+    assert.equal(hit, null, `${skillName} still lets Sekit pick the analysis: ${hit?.[0]}`);
+  }
+
+  const controls = readFileSync(resolve(skillsRoot, 'evaluate-controls/SKILL.md'), 'utf8');
+  const filing = controls.match(/\n## Filing into a gap analysis\n([\s\S]*?)(?=\n## )/);
+  assert.ok(filing, 'evaluate-controls must keep the filing section');
+  assert.match(filing[1], /`gap_analysis_id`\*\* is required/);
+  assert.match(filing[1], /`list_gap_analyses\(client_organization_id\)`/);
+  assert.match(filing[1], /`create_gap_analysis`/);
+  assert.match(
+    filing[1],
+    /\(error: validation_error — Invalid arguments for tool "create_control_evaluation"\. \[gap_analysis_id: is required;/,
+  );
+  assert.match(
+    filing[1],
+    /\(error: validation_error — Invalid arguments for tool "import_control_evaluations"\. \[evaluations\.<N>\.gap_analysis_id: is required;/,
+  );
+
+  const batch = controls.match(/\n8\. \*\*Batch\*\*([\s\S]*?)(?=\n\n)/);
+  assert.ok(batch, 'evaluate-controls must keep the Batch step');
+  assert.match(batch[1], /Every row carries its own\s+`gap_analysis_id`/);
+  assert.match(batch[1], /several gap analyses/);
+  assert.doesNotMatch(controls, /perimeter_id/);
+});
+
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
   assert.ok(existsSync(artifact), 'npm test must build dist/sekit-grc.plugin first');
   assert.doesNotThrow(() => execFileSync('unzip', ['-tq', artifact], { stdio: 'pipe' }));
