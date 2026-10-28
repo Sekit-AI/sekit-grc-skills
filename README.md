@@ -23,7 +23,7 @@ hardcoding one standard.
 | `generate-ropa` | Draft and govern a GDPR Article 30 record of processing activities |
 | `manage-knowledge-base` | Read and maintain the per-client wiki |
 | `manage-evidence-and-deliverables` | Collect evidence and govern client deliverables |
-| `manage-assets` | Inventory people, vendors, and systems and link them to GRC work |
+| `manage-assets` | Inventory people, vendors, data, systems, and devices and link them to GRC work |
 
 These skills assist professional judgment; they do not certify compliance or replace legal
 advice. Writes are real and audited, and client-facing actions require confirmation.
