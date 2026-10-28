@@ -438,17 +438,43 @@ test('sync-asset-inventory teaches the SK-940 external_ref contract and never ar
   assert.match(skill, /`archived`/);
   assert.match(skill, /`update_asset` has no such parameter/);
 
+  const tableRows = (section) =>
+    section
+      .split('\n')
+      .filter((line) => line.startsWith('| ') && !line.startsWith('|---'))
+      .slice(1)
+      .map((line) => line.split('|').slice(1, -1).map((cell) => cell.trim()));
+
+  const mapping = skill.match(/\n## What maps to what\n([\s\S]*?)(?=\n- )/);
+  assert.ok(mapping, 'sync-asset-inventory must keep the mapping table');
+  // Classes and details keys from the server's templates (see the SK-939 test above).
+  const fields = { cloud: ['account', 'region', 'environment'], application: ['authentication', 'integrations'], domain: [] };
+  assert.deepEqual(
+    tableRows(mapping[1]).map(([resource, ref, typeClass, details]) => [resource, ref, typeClass, [...details.matchAll(/`([a-z_]+)`/g)].map((m) => m[1])]),
+    [
+      ['AWS account', '`{"source": "aws", "id": "account:<12-digit account id>"}`', '`system` / `cloud`', ['account']],
+      ['Vercel team', '`{"source": "vercel", "id": "team:<team id>"}`', '`system` / `cloud`', ['account']],
+      ['Vercel project', '`{"source": "vercel", "id": "project:<team id>/<project id>"}`', '`system` / `application`', []],
+      ['Vercel domain', '`{"source": "vercel", "id": "domain:<team id>/<domain name>"}`', '`system` / `domain`', []],
+    ],
+  );
+  for (const [, , typeClass, details] of tableRows(mapping[1])) {
+    const assetClass = typeClass.match(/`system` \/ `([a-z]+)`/)[1];
+    for (const [, key] of details.matchAll(/`([a-z_]+)`/g)) assert.ok(fields[assetClass].includes(key), `${key} is not a ${assetClass} field`);
+  }
+
   const reconcile = skill.match(/\n### 4\. Reconcile\n([\s\S]*?)(?=\n### )/);
   assert.ok(reconcile, 'sync-asset-inventory must keep the Reconcile table');
-  const outcomes = [...reconcile[1].matchAll(/\| \*\*([a-z ]+)\*\* \| ([^|]+) \|/g)].map((m) => [m[1], m[2].trim()]);
-  assert.deepEqual(outcomes, [
-    ['unchanged', 'none'],
-    ['update', '`update_asset` with only what changed'],
-    ['type mismatch', 'none; report it'],
-    ['possible duplicate', 'none; report it'],
-    ['create', '`create_asset` with the reference'],
-    ['disappeared', 'none; report it'],
+  assert.deepEqual(tableRows(reconcile[1]), [
+    ['has it', 'live asset with that reference, sync-owned fields equal', '**unchanged**', 'none'],
+    ['has it', 'live asset with that reference, a sync-owned field differs', '**update**', '`update_asset` with only what changed'],
+    ['has it', 'live asset with that reference, different `asset_type` or `asset_class`', '**type mismatch**', 'none; report it'],
+    ['has it', 'no reference match, but a live asset without a reference of the same type and name', '**possible duplicate**', 'none; report it'],
+    ['has it', 'no match', '**create**', '`create_asset` with the reference'],
+    ['no longer has it', 'live asset with a reference from a scope you read in full', '**disappeared**', 'none; report it'],
   ]);
+  assert.match(reconcile[1], /re-read the asset\s+with `get_asset` and send its current `details` with the source's keys overlaid/);
+  assert.match(skill, /A request to check, compare, or report what changed\s+is a dry run/);
 
   // Archive and restore appear only in the sentence that forbids them.
   const governance = [...skill.matchAll(/`(archive_asset|restore_asset)`/g)].map((m) => m.index);

@@ -29,8 +29,9 @@ Each synced asset carries `external_ref: {source, id}`, its identity in the sour
   or nothing. Archived assets are not listed.
 - `create_asset` with a reference the client already has creates and changes **nothing**. It
   returns the stored asset with `matched: true` and `archived` (`true` when a consultant archived
-  it). It does not check or apply the rest of the payload. A create is therefore safe to retry,
-  but it is never an update.
+  it). The payload must still be a valid create (required fields, known values), but the match
+  skips the class, `details`, and reference checks and applies nothing. A create is therefore safe
+  to retry, but it is never an update.
 
 ## What maps to what
 
@@ -38,13 +39,15 @@ Each synced asset carries `external_ref: {source, id}`, its identity in the sour
 |---|---|---|---|
 | AWS account | `{"source": "aws", "id": "account:<12-digit account id>"}` | `system` / `cloud` | `account`: the account id |
 | Vercel team | `{"source": "vercel", "id": "team:<team id>"}` | `system` / `cloud` | `account`: the team slug |
-| Vercel project | `{"source": "vercel", "id": "project:<project id>"}` | `system` / `application` | none |
-| Vercel domain | `{"source": "vercel", "id": "domain:<domain name>"}` | `system` / `domain` | none |
+| Vercel project | `{"source": "vercel", "id": "project:<team id>/<project id>"}` | `system` / `application` | none |
+| Vercel domain | `{"source": "vercel", "id": "domain:<team id>/<domain name>"}` | `system` / `domain` | none |
 
 - `name` is the source's human label: the account alias or name, the team or project name, the
   domain.
 - Fill `region` and `environment` only when the person states them. The source does not say
   which account is production.
+- The id names its scope (the account, the team), so you can tell which read an asset belongs
+  to. A project moved to another team is therefore a disappearance plus a create.
 - That is the default scope. Sync other resources (an S3 bucket, an RDS database) only when the
   person asks, with the ARN as the id (`{"source": "aws", "id": "<ARN>"}`) and the class from
   the **manage-assets** registry. Another provider follows the same pattern:
@@ -96,15 +99,18 @@ Classify every source resource, then every Sekit asset of the sources you read:
 | has it | no match | **create** | `create_asset` with the reference |
 | no longer has it | live asset with a reference from a scope you read in full | **disappeared** | none; report it |
 
-- **Update.** `details` replaces the stored object. Send the stored `details` with the source's
-  keys overlaid, so the person's keys survive. Send `name` only when it changed.
+- **Update.** `details` replaces the stored object. Right before the write, re-read the asset
+  with `get_asset` and send its current `details` with the source's keys overlaid, so the
+  person's keys survive, including an edit made while you waited for the go-ahead. Send `name`
+  only when it changed.
 - **Create that returns `matched: true`.** With `archived: true`, a consultant archived it. Leave
   it archived and report it. With `archived: false`, the asset appeared since step 3 (another run
-  made it). Treat it as existing and compare it on the next run.
-- **Disappeared.** Report it and leave it as it is. Never call `archive_asset` or `restore_asset`.
+  made it). Reconcile the returned asset now, as if step 3 had listed it.
+- **Disappeared.** An asset is in scope when its id names an account or team you read in full.
+  Report it and leave it as it is. Never call `archive_asset` or `restore_asset`.
   A resource can vanish from a read for reasons that are not deletion (permissions, a moved
-  project), and the asset may anchor risks and evidence. The person decides. If you cannot tell
-  whether an asset was inside the scope you read, report it as "not seen" and say why.
+  project), and the asset may anchor risks and evidence. The person decides. An asset of a scope
+  you did not read is "not seen": report it, never as disappeared.
 - Touch nothing else: no assets without a reference, no assets of a source you did not read, no
   asset links, no contacts.
 
@@ -112,9 +118,10 @@ Classify every source resource, then every Sekit asset of the sources you read:
 
 - **A person is in the conversation:** show the plan (counts, plus each create and each update
   with old → new) and wait for a go-ahead before the first write.
-- **An unattended run** (a schedule, a bot): the standing instruction that started it, naming the
-  client and the source, is the go-ahead for the creates and updates in this skill and nothing
-  more. Without such an instruction, write nothing and report the plan.
+- **An unattended run** (a schedule, a bot): only a standing instruction that explicitly asks to
+  sync, import, or write the source into the named client's inventory is the go-ahead, and only
+  for the creates and updates in this skill. A request to check, compare, or report what changed
+  is a dry run: write nothing and report the plan.
 
 Asset writes apply directly. They are not queued in Agent updates.
 
