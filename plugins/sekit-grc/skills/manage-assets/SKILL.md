@@ -151,7 +151,8 @@ Two common shapes:
     `role`, `owner_asset_id`, `details`, `supplier_asset_id`, or `assignee_asset_id`.
     `asset_type`, `name`, and `criticality` can be set but never nulled.
   - Sent `details` replace the stored object and are validated as on create: resend every field
-    you want to keep (a device's always includes `ownership`).
+    you want to keep (a device's always includes `ownership`). `details: null` is `{}`, so a
+    device refuses it: to clear a device's optional fields, send `{"ownership": ...}` alone.
   - Changing `asset_type` or `asset_class` without `details` keeps the stored keys the new class
     has and drops the rest.
   - Changing `asset_type` resets `asset_class` unless you send one, clears the references the

@@ -335,58 +335,92 @@ test('every control-evaluation write names its gap analysis (SK-873)', () => {
 
 test('manage-assets teaches every asset type, class, field and reference Sekit validates (SK-939)', () => {
   // Mirrors apps/web/src/lib/asset-templates.ts in sekit-monorepo at 64a6be33 (SK-935).
-  const answer = ['yes', 'no', 'unknown'];
-  const types = {
-    person: { classes: [], fields: {} },
-    third_party: { classes: [], fields: {} },
-    information: {
-      classes: [],
-      fields: {
-        classification: ['public', 'internal', 'confidential', 'restricted'],
-        personal_data: answer,
-        health_data: answer,
-        access: [],
-      },
-    },
+  const device = ['ownership', 'os', 'disk_encrypted'];
+  const templates = {
+    person: { '': [] },
+    third_party: { '': [] },
+    information: { '': ['classification', 'personal_data', 'health_data', 'access'] },
     system: {
-      classes: ['cloud', 'saas', 'application', 'repository', 'backup', 'domain', 'other'],
-      fields: {
-        account: [],
-        region: [],
-        environment: ['production', 'other'],
-        mfa: answer,
-        receives_user_data: answer,
-        authentication: [],
-        integrations: [],
-        auto_deploy: answer,
-      },
+      cloud: ['account', 'region', 'environment'],
+      saas: ['mfa', 'receives_user_data'],
+      application: ['authentication', 'integrations'],
+      repository: ['auto_deploy'],
+      backup: [],
+      domain: [],
+      other: [],
     },
-    device: {
-      classes: ['laptop', 'phone', 'other'],
-      fields: { ownership: ['company', 'personal'], os: [], disk_encrypted: answer },
-    },
+    device: { laptop: device, phone: device, other: device },
   };
-  const references = ['supplier_asset_id', 'assignee_asset_id', 'location_asset_ids'];
+  const answer = ['yes', 'no', 'unknown'];
+  const text = [];
+  const values = {
+    classification: ['public', 'internal', 'confidential', 'restricted'],
+    personal_data: answer,
+    health_data: answer,
+    mfa: answer,
+    receives_user_data: answer,
+    auto_deploy: answer,
+    disk_encrypted: answer,
+    environment: ['production', 'other'],
+    ownership: ['company', 'personal'],
+    account: text,
+    region: text,
+    authentication: text,
+    integrations: text,
+    access: text,
+    os: text,
+  };
+  const references = {
+    supplier_asset_id: { carrier: 'system', targets: ['third_party'] },
+    assignee_asset_id: { carrier: 'device', targets: ['person'] },
+    location_asset_ids: { carrier: 'information', targets: ['system', 'third_party'] },
+  };
 
   const skill = readFileSync(resolve(skillsRoot, 'manage-assets/SKILL.md'), 'utf8');
-  const ticked = (word) => new RegExp(`\`${word}\``);
-  for (const [type, { classes, fields }] of Object.entries(types)) {
-    assert.match(skill, ticked(type), `manage-assets must name the ${type} type`);
-    for (const assetClass of classes) {
-      assert.match(skill, ticked(assetClass), `manage-assets must name the ${type} class ${assetClass}`);
-    }
-    for (const [field, options] of Object.entries(fields)) {
-      assert.match(skill, ticked(field), `manage-assets must name the ${type} field ${field}`);
-      for (const option of options) {
-        assert.match(skill, ticked(option), `manage-assets must name ${field} value ${option}`);
-      }
-    }
-  }
-  for (const reference of references) assert.match(skill, ticked(reference));
-  assert.match(skill, ticked('asset_class'));
-  assert.match(skill, /`ownership`[^\n]*required/, 'a device needs an ownership answer');
-  assert.match(skill, /details\.<key>/, 'manage-assets must say an unknown details key is refused');
+  const rows = (heading) => {
+    const section = skill.match(new RegExp(`\\n### ${heading}\\n([\\s\\S]*?)(?=\\n### |\\n## )`));
+    assert.ok(section, `manage-assets must keep the ${heading} table`);
+    const lines = section[1].split('\n');
+    return lines
+      .filter((line, i) => line.startsWith('| `') && !lines[i + 1]?.startsWith('|---'))
+      .map((line) => line.split(/(?<!\\)\|/).slice(1, -1).map((cell) => [...cell.matchAll(/`([^`]+)`/g)].map((m) => m[1])));
+  };
+  const sorted = (list) => [...list].sort();
 
+  const taught = {};
+  for (const [[type], classes, fields, refs] of rows('Asset registry')) {
+    for (const assetClass of classes.length > 0 ? classes : ['']) {
+      taught[type] ??= {};
+      taught[type][assetClass] = sorted(fields);
+    }
+    for (const ref of refs) assert.equal(references[ref]?.carrier, type, `${ref} is not carried by ${type}`);
+  }
+  const expected = Object.fromEntries(
+    Object.entries(templates).map(([type, byClass]) => [
+      type,
+      Object.fromEntries(Object.entries(byClass).map(([assetClass, fields]) => [assetClass, sorted(fields)])),
+    ]),
+  );
+  assert.deepEqual(taught, expected, 'the registry must list each (type, class) with exactly its fields');
+
+  const taughtValues = {};
+  for (const [fields, options] of rows('Field values')) {
+    for (const field of fields) taughtValues[field] = sorted(options);
+  }
+  assert.deepEqual(
+    taughtValues,
+    Object.fromEntries(Object.entries(values).map(([field, options]) => [field, sorted(options)])),
+    'every field must list exactly its values',
+  );
+
+  const taughtRefs = {};
+  for (const [[param], [carrier], targets] of rows('References')) {
+    taughtRefs[param] = { carrier, targets: sorted(targets) };
+  }
+  assert.deepEqual(taughtRefs, references, 'every reference must name its carrier and target types');
+
+  assert.match(skill, /`ownership` \| `company` \\\| `personal` \(required/, 'a device needs an ownership answer');
+  assert.match(skill, /details\.<key>/, 'manage-assets must say an unknown details key is refused');
   assert.doesNotMatch(skill, /one inventory, three types/i);
   assert.doesNotMatch(skill, /data_processed|contract_ref|"hosting"/, 'free-form details are refused now');
   assert.doesNotMatch(skill, /external_ref|matched: true|default owner/i, 'not shipped in SK-935');
