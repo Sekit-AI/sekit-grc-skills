@@ -32,7 +32,7 @@ Expand only the capability area relevant to the user's goal:
 
 | Consultant goal | What Sekit helps with | Route to |
 |---|---|---|
-| Understand a client | Build reusable context in the client wiki and inventory people, vendors, data, systems, and devices | `manage-knowledge-base`, `manage-assets` |
+| Understand a client | Build reusable context in the client wiki and inventory people, vendors, data, systems, and devices | `manage-knowledge-base`, `manage-assets`, `sync-asset-inventory` |
 | Assess posture or a standard | Scope a framework, evaluate assessable controls, record gaps, and use the crosswalk | `run-gap-analysis`, `evaluate-controls` |
 | Manage risk | Build and maintain a risk register with likelihood, impact, ownership, and evidence | `analyze-risks` |
 | Collect proof from a client | Share a Solicitud with the client's people, follow what they upload, review the agent proposals, and link accepted evidence | `manage-evidence-and-deliverables` |

@@ -110,7 +110,7 @@ test('every skill has portable, valid frontmatter', () => {
     .filter((entry) => statSync(resolve(skillsRoot, entry)).isDirectory())
     .sort();
 
-  assert.equal(skillNames.length, 9);
+  assert.equal(skillNames.length, 10);
   assert.ok(skillNames.includes('sekit-onboarding'));
 
   for (const skillName of skillNames) {
@@ -423,7 +423,66 @@ test('manage-assets teaches every asset type, class, field and reference Sekit v
   assert.match(skill, /details\.<key>/, 'manage-assets must say an unknown details key is refused');
   assert.doesNotMatch(skill, /one inventory, three types/i);
   assert.doesNotMatch(skill, /data_processed|contract_ref|"hosting"/, 'free-form details are refused now');
-  assert.doesNotMatch(skill, /external_ref|matched: true|default owner/i, 'not shipped in SK-935');
+  assert.doesNotMatch(skill, /default owner/i, 'not shipped in SK-935');
+  assert.doesNotMatch(skill, /external_ref|matched: true/, 'sync-asset-inventory owns the sync contract');
+  assert.match(skill, /\*\*sync-asset-inventory\*\*/, 'manage-assets must route a sync to sync-asset-inventory');
+});
+
+test('sync-asset-inventory teaches the SK-940 external_ref contract and never archives (SK-941)', () => {
+  const skill = readFileSync(resolve(skillsRoot, 'sync-asset-inventory/SKILL.md'), 'utf8');
+
+  // The server's ExternalRefSchema (apps/web/src/lib/asset-external-ref.ts, SK-940).
+  assert.ok(skill.includes('`^[a-z][a-z0-9_.-]{0,63}$`'), 'the source rule must match the server');
+  assert.match(skill, /1 to 512 characters/);
+  assert.match(skill, /`matched: true`/);
+  assert.match(skill, /`archived`/);
+  assert.match(skill, /`update_asset` has no such parameter/);
+
+  const tableRows = (section) =>
+    section
+      .split('\n')
+      .filter((line) => line.startsWith('| ') && !line.startsWith('|---'))
+      .slice(1)
+      .map((line) => line.split('|').slice(1, -1).map((cell) => cell.trim()));
+
+  const mapping = skill.match(/\n## What maps to what\n([\s\S]*?)(?=\n- )/);
+  assert.ok(mapping, 'sync-asset-inventory must keep the mapping table');
+  // Classes and details keys from the server's templates (see the SK-939 test above).
+  const fields = { cloud: ['account', 'region', 'environment'], application: ['authentication', 'integrations'], domain: [] };
+  assert.deepEqual(
+    tableRows(mapping[1]).map(([resource, ref, typeClass, details]) => [resource, ref, typeClass, [...details.matchAll(/`([a-z_]+)`/g)].map((m) => m[1])]),
+    [
+      ['AWS account', '`{"source": "aws", "id": "account:<12-digit account id>"}`', '`system` / `cloud`', ['account']],
+      ['Vercel team', '`{"source": "vercel", "id": "team:<team id>"}`', '`system` / `cloud`', ['account']],
+      ['Vercel project', '`{"source": "vercel", "id": "project:<team id>/<project id>"}`', '`system` / `application`', []],
+      ['Vercel domain', '`{"source": "vercel", "id": "domain:<team id>/<domain name>"}`', '`system` / `domain`', []],
+    ],
+  );
+  for (const [, , typeClass, details] of tableRows(mapping[1])) {
+    const assetClass = typeClass.match(/`system` \/ `([a-z]+)`/)[1];
+    for (const [, key] of details.matchAll(/`([a-z_]+)`/g)) assert.ok(fields[assetClass].includes(key), `${key} is not a ${assetClass} field`);
+  }
+
+  const reconcile = skill.match(/\n### 4\. Reconcile\n([\s\S]*?)(?=\n### )/);
+  assert.ok(reconcile, 'sync-asset-inventory must keep the Reconcile table');
+  assert.deepEqual(tableRows(reconcile[1]), [
+    ['has it', 'live asset with that reference, sync-owned fields equal', '**unchanged**', 'none'],
+    ['has it', 'live asset with that reference, a sync-owned field differs', '**update**', '`update_asset` with only what changed'],
+    ['has it', 'live asset with that reference, different `asset_type` or `asset_class`', '**type mismatch**', 'none; report it'],
+    ['has it', 'no reference match, but a live asset of the same source whose reference has the same resource id under another scope', '**moved**', 'none; report it'],
+    ['has it', 'no reference match, but a live asset without a reference of the same type and name', '**possible duplicate**', 'none; report it'],
+    ['has it', 'no match', '**create**', '`create_asset` with the reference'],
+    ['no longer has it', 'live asset with a reference from a scope you read in full', '**disappeared**', 'none; report it'],
+  ]);
+  assert.match(reconcile[1], /re-read the asset\s+with `get_asset` and send its current `details` with the source's keys overlaid/);
+  assert.match(skill, /A request to check, compare, or report what changed\s+is a dry run/);
+
+  // Archive and restore appear only in the sentence that forbids them.
+  const governance = [...skill.matchAll(/`(archive_asset|restore_asset)`/g)].map((m) => m.index);
+  assert.equal(governance.length, 2);
+  for (const index of governance) {
+    assert.match(skill.slice(skill.lastIndexOf('\n', index), index), /Never call/);
+  }
 });
 
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {

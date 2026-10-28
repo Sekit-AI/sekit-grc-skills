@@ -1,0 +1,11 @@
+interface:
+  display_name: "Sync Sekit Asset Inventory"
+  short_description: "Mirror AWS or Vercel resources into a client's assets"
+  default_prompt: "Use $sync-asset-inventory to sync a source's resources into a Sekit client's asset inventory."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "sekit-consultant"
+      description: "Sekit consultant MCP"
+      transport: "streamable_http"
+      url: "https://sekit.ai/api/mcp/consultant"
