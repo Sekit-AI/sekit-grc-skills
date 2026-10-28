@@ -19,6 +19,8 @@ where data lives, or make the relationship between an asset and some work (a ris
 control) explicit. You are the consultant's hands: propose, they decide. Ground the inventory in
 what's actually known about the client (the wiki, declared facts, uploaded files); don't invent
 assets, and don't invent answers for them.
+To keep the inventory in step with AWS, Vercel, or another technical source, use
+**sync-asset-inventory**.
 
 ## The model
 

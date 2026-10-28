@@ -24,6 +24,7 @@ hardcoding one standard.
 | `manage-knowledge-base` | Read and maintain the per-client wiki |
 | `manage-evidence-and-deliverables` | Collect evidence and govern client deliverables |
 | `manage-assets` | Inventory people, vendors, data, systems, and devices and link them to GRC work |
+| `sync-asset-inventory` | Keep a client's asset inventory in step with AWS, Vercel, or another source |
 
 These skills assist professional judgment; they do not certify compliance or replace legal
 advice. Writes are real and audited, and client-facing actions require confirmation.
@@ -82,13 +83,13 @@ when someone only needs the skills:
 
 1. Download the `.skill` files from the latest
    [GitHub release](https://github.com/Sekit-AI/sekit-grc-skills/releases). The
-   `sekit-grc-skills.zip` asset holds all nine of them so you can grab them in one download.
+   `sekit-grc-skills.zip` asset holds all ten of them so you can grab them in one download.
    **Unzip it first — that bundle is not itself a skill.** ChatGPT accepts one skill per
    archive, so uploading the bundle fails with `Archive must include at least one SKILL.md
    file at the skill root`.
 2. In ChatGPT, open **Upload a skill** and upload the individual `.skill` files you want; the
    picker takes several at once. For the guided starting experience, upload
-   `sekit-mcp-guide.skill` and `sekit-onboarding.skill`. Upload all nine for the complete
+   `sekit-mcp-guide.skill` and `sekit-onboarding.skill`. Upload all ten for the complete
    workflow set.
 3. Authorize the declared Sekit MCP connection when ChatGPT prompts you, then start a new chat and
    invoke a skill with `@`, for example `@sekit-onboarding`.
@@ -131,7 +132,7 @@ npm test
 ```
 
 This validates the Claude and OpenAI manifests plus skill frontmatter, builds
-`dist/sekit-grc.plugin`, nine direct-upload `.skill` files, and a convenience ZIP, then verifies
+`dist/sekit-grc.plugin`, ten direct-upload `.skill` files, and a convenience ZIP, then verifies
 every archive against its canonical source. There are no npm runtime dependencies.
 
 To try an unpublished checkout in Claude Code:
@@ -148,7 +149,7 @@ connector vulnerabilities through [SECURITY.md](SECURITY.md), not a public issue
 
 This repository is the canonical source for the Sekit GRC plugin. A tag named `vX.Y.Z` must
 match both package and plugin manifest versions; the release workflow validates, builds, and
-attaches `sekit-grc.plugin`, the nine `.skill` files, their convenience ZIP, and checksums.
+attaches `sekit-grc.plugin`, the ten `.skill` files, their convenience ZIP, and checksums.
 Maintainers cut the tag from `main` with `npm run release-tag`; see
 [CONTRIBUTING.md](CONTRIBUTING.md#versioning). Sekit
 may mirror the Claude artifact at

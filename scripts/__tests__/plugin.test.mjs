@@ -110,7 +110,7 @@ test('every skill has portable, valid frontmatter', () => {
     .filter((entry) => statSync(resolve(skillsRoot, entry)).isDirectory())
     .sort();
 
-  assert.equal(skillNames.length, 9);
+  assert.equal(skillNames.length, 10);
   assert.ok(skillNames.includes('sekit-onboarding'));
 
   for (const skillName of skillNames) {
@@ -423,7 +423,39 @@ test('manage-assets teaches every asset type, class, field and reference Sekit v
   assert.match(skill, /details\.<key>/, 'manage-assets must say an unknown details key is refused');
   assert.doesNotMatch(skill, /one inventory, three types/i);
   assert.doesNotMatch(skill, /data_processed|contract_ref|"hosting"/, 'free-form details are refused now');
-  assert.doesNotMatch(skill, /external_ref|matched: true|default owner/i, 'not shipped in SK-935');
+  assert.doesNotMatch(skill, /default owner/i, 'not shipped in SK-935');
+  assert.doesNotMatch(skill, /external_ref|matched: true/, 'sync-asset-inventory owns the sync contract');
+  assert.match(skill, /\*\*sync-asset-inventory\*\*/, 'manage-assets must route a sync to sync-asset-inventory');
+});
+
+test('sync-asset-inventory teaches the SK-940 external_ref contract and never archives (SK-941)', () => {
+  const skill = readFileSync(resolve(skillsRoot, 'sync-asset-inventory/SKILL.md'), 'utf8');
+
+  // The server's ExternalRefSchema (apps/web/src/lib/asset-external-ref.ts, SK-940).
+  assert.ok(skill.includes('`^[a-z][a-z0-9_.-]{0,63}$`'), 'the source rule must match the server');
+  assert.match(skill, /1 to 512 characters/);
+  assert.match(skill, /`matched: true`/);
+  assert.match(skill, /`archived`/);
+  assert.match(skill, /`update_asset` has no such parameter/);
+
+  const reconcile = skill.match(/\n### 4\. Reconcile\n([\s\S]*?)(?=\n### )/);
+  assert.ok(reconcile, 'sync-asset-inventory must keep the Reconcile table');
+  const outcomes = [...reconcile[1].matchAll(/\| \*\*([a-z ]+)\*\* \| ([^|]+) \|/g)].map((m) => [m[1], m[2].trim()]);
+  assert.deepEqual(outcomes, [
+    ['unchanged', 'none'],
+    ['update', '`update_asset` with only what changed'],
+    ['type mismatch', 'none; report it'],
+    ['possible duplicate', 'none; report it'],
+    ['create', '`create_asset` with the reference'],
+    ['disappeared', 'none; report it'],
+  ]);
+
+  // Archive and restore appear only in the sentence that forbids them.
+  const governance = [...skill.matchAll(/`(archive_asset|restore_asset)`/g)].map((m) => m.index);
+  assert.equal(governance.length, 2);
+  for (const index of governance) {
+    assert.match(skill.slice(skill.lastIndexOf('\n', index), index), /Never call/);
+  }
 });
 
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {

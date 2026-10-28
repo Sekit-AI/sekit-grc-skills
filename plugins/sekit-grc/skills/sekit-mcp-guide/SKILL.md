@@ -102,7 +102,7 @@ the connector.
 | **Artifacts / deliverables** | `list_artifacts`, `get_artifact`, `prepare_artifact_upload`, `create_artifact_from_upload`, `update_artifact`, `approve_artifact`, `revert_artifact_approval`, `archive_artifact`, `restore_artifact` → see **manage-evidence-and-deliverables** |
 | **Reports** (read-only) | `list_reports`, `get_report`, `get_report_markdown` → see **Reports** below |
 | **Client files** | `list_client_files`, `get_client_file`, `get_client_file_markdown`, `download_client_file`, `prepare_client_file_upload`, `create_client_file_from_upload`, `update_client_file`, `archive_client_file`, `restore_client_file` |
-| **Assets / inventory** | `list_assets`, `get_asset`, `create_asset`, `update_asset`, `archive_asset`, `restore_asset`, `list_asset_links`, `create_asset_link`, `archive_asset_link`, `restore_asset_link` → see **manage-assets** |
+| **Assets / inventory** | `list_assets`, `get_asset`, `create_asset`, `update_asset`, `archive_asset`, `restore_asset`, `list_asset_links`, `create_asset_link`, `archive_asset_link`, `restore_asset_link` → see **manage-assets**; syncing from AWS, Vercel, or another source by `external_ref` → see **sync-asset-inventory** |
 | **People / portal** | `list_contacts`, `get_contact`, `create_contact` (bridge a person asset via `asset_id`), `update_contact`, `archive_contact`, `restore_contact`, `list_portal_tokens`, `revoke_portal_token` → see **manage-assets** |
 | **Knowledge base (wiki)** | `wiki_list`, `wiki_read`, `wiki_search`, `wiki_write`, `wiki_append` → see **manage-knowledge-base** |
 | **Audit log** (read-only) | `list_audit_log`, `get_audit_entry` |
@@ -482,3 +482,4 @@ These tools mutate a live consultant platform. Before any **create / update / ap
 | Explain how a control maps to another framework, or walk back from a framework control | **evaluate-controls**, **run-gap-analysis** (§ other frameworks) |
 | Register people / vendors / systems, set criticality + owner, link assets to risks/gaps/controls | **manage-assets** |
 | Make a person contactable, share a Solicitud with them (portal access), or revoke a portal link | **manage-assets** |
+| Keep a client's inventory in step with AWS, Vercel, or another source, and report what disappeared | **sync-asset-inventory** |
