@@ -469,6 +469,7 @@ test('sync-asset-inventory teaches the SK-940 external_ref contract and never ar
     ['has it', 'live asset with that reference, sync-owned fields equal', '**unchanged**', 'none'],
     ['has it', 'live asset with that reference, a sync-owned field differs', '**update**', '`update_asset` with only what changed'],
     ['has it', 'live asset with that reference, different `asset_type` or `asset_class`', '**type mismatch**', 'none; report it'],
+    ['has it', 'no reference match, but a live asset of the same source whose reference has the same resource id under another scope', '**moved**', 'none; report it'],
     ['has it', 'no reference match, but a live asset without a reference of the same type and name', '**possible duplicate**', 'none; report it'],
     ['has it', 'no match', '**create**', '`create_asset` with the reference'],
     ['no longer has it', 'live asset with a reference from a scope you read in full', '**disappeared**', 'none; report it'],

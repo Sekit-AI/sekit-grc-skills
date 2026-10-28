@@ -47,7 +47,7 @@ Each synced asset carries `external_ref: {source, id}`, its identity in the sour
 - Fill `region` and `environment` only when the person states them. The source does not say
   which account is production.
 - The id names its scope (the account, the team), so you can tell which read an asset belongs
-  to. A project moved to another team is therefore a disappearance plus a create.
+  to. The part after `<team id>/` is the resource's own id, which a move between teams keeps.
 - That is the default scope. Sync other resources (an S3 bucket, an RDS database) only when the
   person asks, with the ARN as the id (`{"source": "aws", "id": "<ARN>"}`) and the class from
   the **manage-assets** registry. Another provider follows the same pattern:
@@ -95,6 +95,7 @@ Classify every source resource, then every Sekit asset of the sources you read:
 | has it | live asset with that reference, sync-owned fields equal | **unchanged** | none |
 | has it | live asset with that reference, a sync-owned field differs | **update** | `update_asset` with only what changed |
 | has it | live asset with that reference, different `asset_type` or `asset_class` | **type mismatch** | none; report it |
+| has it | no reference match, but a live asset of the same source whose reference has the same resource id under another scope | **moved** | none; report it |
 | has it | no reference match, but a live asset without a reference of the same type and name | **possible duplicate** | none; report it |
 | has it | no match | **create** | `create_asset` with the reference |
 | no longer has it | live asset with a reference from a scope you read in full | **disappeared** | none; report it |
@@ -106,6 +107,9 @@ Classify every source resource, then every Sekit asset of the sources you read:
 - **Create that returns `matched: true`.** With `archived: true`, a consultant archived it. Leave
   it archived and report it. With `archived: false`, the asset appeared since step 3 (another run
   made it). Reconcile the returned asset now, as if step 3 had listed it.
+- **Moved.** A project or domain transferred to another team gets a new reference, so a create
+  would leave the old asset, with its owner, risks, and evidence, beside a second one. Report
+  both references together as moved, never the old one as disappeared. The person decides.
 - **Disappeared.** An asset is in scope when its id names an account or team you read in full.
   Report it and leave it as it is. Never call `archive_asset` or `restore_asset`.
   A resource can vanish from a read for reasons that are not deletion (permissions, a moved
@@ -136,7 +140,7 @@ Updated (N): <name>: <field> <old> → <new>, ...
 Unchanged: N
 Disappeared from the source, still live in Sekit (N): <name> [<source>:<id>], ... (not archived; your call)
 Archived in Sekit, still in the source (N): <name>, ... (left archived)
-Needs you (N): possible duplicates, type mismatches, review criticality, missing supplier, ...
+Needs you (N): moved, possible duplicates, type mismatches, review criticality, missing supplier, ...
 Not read (N): <scope>: <reason>
 ```
 
