@@ -333,6 +333,65 @@ test('every control-evaluation write names its gap analysis (SK-873)', () => {
   assert.doesNotMatch(controls, /perimeter_id/);
 });
 
+test('manage-assets teaches every asset type, class, field and reference Sekit validates (SK-939)', () => {
+  // Mirrors apps/web/src/lib/asset-templates.ts in sekit-monorepo at 64a6be33 (SK-935).
+  const answer = ['yes', 'no', 'unknown'];
+  const types = {
+    person: { classes: [], fields: {} },
+    third_party: { classes: [], fields: {} },
+    information: {
+      classes: [],
+      fields: {
+        classification: ['public', 'internal', 'confidential', 'restricted'],
+        personal_data: answer,
+        health_data: answer,
+        access: [],
+      },
+    },
+    system: {
+      classes: ['cloud', 'saas', 'application', 'repository', 'backup', 'domain', 'other'],
+      fields: {
+        account: [],
+        region: [],
+        environment: ['production', 'other'],
+        mfa: answer,
+        receives_user_data: answer,
+        authentication: [],
+        integrations: [],
+        auto_deploy: answer,
+      },
+    },
+    device: {
+      classes: ['laptop', 'phone', 'other'],
+      fields: { ownership: ['company', 'personal'], os: [], disk_encrypted: answer },
+    },
+  };
+  const references = ['supplier_asset_id', 'assignee_asset_id', 'location_asset_ids'];
+
+  const skill = readFileSync(resolve(skillsRoot, 'manage-assets/SKILL.md'), 'utf8');
+  const ticked = (word) => new RegExp(`\`${word}\``);
+  for (const [type, { classes, fields }] of Object.entries(types)) {
+    assert.match(skill, ticked(type), `manage-assets must name the ${type} type`);
+    for (const assetClass of classes) {
+      assert.match(skill, ticked(assetClass), `manage-assets must name the ${type} class ${assetClass}`);
+    }
+    for (const [field, options] of Object.entries(fields)) {
+      assert.match(skill, ticked(field), `manage-assets must name the ${type} field ${field}`);
+      for (const option of options) {
+        assert.match(skill, ticked(option), `manage-assets must name ${field} value ${option}`);
+      }
+    }
+  }
+  for (const reference of references) assert.match(skill, ticked(reference));
+  assert.match(skill, ticked('asset_class'));
+  assert.match(skill, /`ownership`[^\n]*required/, 'a device needs an ownership answer');
+  assert.match(skill, /details\.<key>/, 'manage-assets must say an unknown details key is refused');
+
+  assert.doesNotMatch(skill, /one inventory, three types/i);
+  assert.doesNotMatch(skill, /data_processed|contract_ref|"hosting"/, 'free-form details are refused now');
+  assert.doesNotMatch(skill, /external_ref|matched: true|default owner/i, 'not shipped in SK-935');
+});
+
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
   assert.ok(existsSync(artifact), 'npm test must build dist/sekit-grc.plugin first');
   assert.doesNotThrow(() => execFileSync('unzip', ['-tq', artifact], { stdio: 'pipe' }));
