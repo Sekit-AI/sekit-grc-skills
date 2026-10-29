@@ -9,8 +9,8 @@ import { execFileSync } from 'node:child_process';
 // install doesn't reliably deliver SKILL.md files).
 //
 // Uses the system `zip` (present on macOS + Linux) instead of an npm archiver
-// dependency, so this tool stays dependency-free inside the monorepo: no
-// node_modules, no lockfile, nothing for pnpm/CI to resolve.
+// dependency, so this tool stays dependency-free: no node_modules, no lockfile,
+// nothing for CI to resolve.
 
 // The Agent Skills spec (https://agentskills.io/specification) caps `name` at 64
 // characters and `description` at 1024. ChatGPT's skill uploader enforces both and

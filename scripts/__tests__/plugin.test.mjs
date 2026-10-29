@@ -334,7 +334,7 @@ test('every control-evaluation write names its gap analysis (SK-873)', () => {
 });
 
 test('manage-assets teaches every asset type, class, field and reference Sekit validates (SK-939)', () => {
-  // Mirrors apps/web/src/lib/asset-templates.ts in sekit-monorepo at 64a6be33 (SK-935).
+  // Mirrors the asset templates the Sekit server's asset service validates (SK-935).
   const device = ['ownership', 'os', 'disk_encrypted'];
   const templates = {
     person: { '': [] },
@@ -431,7 +431,7 @@ test('manage-assets teaches every asset type, class, field and reference Sekit v
 test('sync-asset-inventory teaches the SK-940 external_ref contract and never archives (SK-941)', () => {
   const skill = readFileSync(resolve(skillsRoot, 'sync-asset-inventory/SKILL.md'), 'utf8');
 
-  // The server's ExternalRefSchema (apps/web/src/lib/asset-external-ref.ts, SK-940).
+  // The external_ref rule the Sekit server's asset service enforces (SK-940).
   assert.ok(skill.includes('`^[a-z][a-z0-9_.-]{0,63}$`'), 'the source rule must match the server');
   assert.match(skill, /1 to 512 characters/);
   assert.match(skill, /`matched: true`/);
