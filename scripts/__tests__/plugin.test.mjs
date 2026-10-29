@@ -485,6 +485,26 @@ test('sync-asset-inventory teaches the SK-940 external_ref contract and never ar
   }
 });
 
+test('sync-asset-inventory says agent writes await review in Sekit and never archives (SK-944)', () => {
+  const skill = readFileSync(resolve(skillsRoot, 'sync-asset-inventory/SKILL.md'), 'utf8');
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+
+  // SK-942: an agent user's asset create or update is an Agent update; a person's is not.
+  assert.doesNotMatch(skill, /not queued in Agent updates/);
+  assert.match(skill, /As an agent user, each asset you create or\s+update applies at once and also waits for a person's review in Sekit, under «Actualizaciones de\s+agentes»/);
+  assert.match(skill, /consultant's own writes through this connector apply directly and are not reviewed/);
+  assert.match(skill, /Never mark\s+your own writes reviewed/);
+  assert.match(skill, /Never archive or restore an asset, not\s+even one that disappeared from the source/);
+  assert.match(guide, /`Evidence` \| `CompanyControl` \| `Asset`\)/);
+
+  const report = skill.match(/\n### 6\. Report\n([\s\S]*)$/);
+  assert.ok(report, 'sync-asset-inventory must keep the Report section');
+  const template = report[1].match(/```text\n([\s\S]*?)```/)[1].split('\n');
+  assert.equal(template[1], 'Review: N changes await review in Sekit under «Actualizaciones de agentes» (Agent updates)');
+  assert.ok(template.some((line) => line.startsWith('Disappeared from the source, still live in Sekit (N): <name> [<source>:<id>]') && line.endsWith('(not archived; your call)')));
+  assert.match(report[1], /Name every disappeared asset with its reference, never only a count/);
+});
+
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
   assert.ok(existsSync(artifact), 'npm test must build dist/sekit-grc.plugin first');
   assert.doesNotThrow(() => execFileSync('unzip', ['-tq', artifact], { stdio: 'pipe' }));

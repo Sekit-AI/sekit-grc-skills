@@ -299,8 +299,8 @@ Agent updates are the changes **agents** made that still wait for the consultant
 
 `list_agent_updates(client_organization_id)` returns the pending ones (`review_status`
 `pending_review` by default, or `all` / `reverted`): the subject changed (`ControlEvaluation`
-| `Risk` | `Evidence`), the trigger and `agent_slug` that made it, and the agent's reasoning
-when it gave one.
+| `Risk` | `Evidence` | `CompanyControl` | `Asset`), the trigger and `agent_slug` that made
+it, and the agent's reasoning when it gave one.
 
 `approve_agent_updates(client_organization_id, update_ids)` (or `all: true`) marks them
 reviewed, exactly as **Mark reviewed** does in the console. That sign-off is not a permission:
