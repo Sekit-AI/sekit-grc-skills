@@ -1,15 +1,23 @@
 ---
 name: sync-asset-inventory
-description: "Keep a Sekit client's asset inventory in step with a technical source such as AWS or Vercel, as an agent or consultant with read access to that source. Read the source, look each resource up in Sekit by its external_ref, create the missing ones with the right type, class, fields, and reference, update the ones that changed, leave unchanged ones alone, never archive, and report the ones that disappeared from the source to the person. Use whenever someone or a scheduled run asks to sync, import, reconcile, refresh, or mirror cloud accounts, Vercel projects, domains, or other infrastructure into a client's Sekit inventory, or asks what changed since the last sync. Read sekit-mcp-guide and manage-assets first."
+description: "Keep a Sekit client's asset inventory in step with a technical source such as AWS or Vercel, as an agent or consultant with read access to that source. Read the source, look each resource up in Sekit by its external_ref, create the missing ones with the right type, class, fields, and reference, update the ones that changed, leave unchanged ones alone, never archive, and report the ones that disappeared from the source to the person. An agent user's writes wait for a person's review in Sekit under Agent updates, and the report says so. Use whenever someone or a scheduled run asks to sync, import, reconcile, refresh, or mirror cloud accounts, Vercel projects, domains, or other infrastructure into a client's Sekit inventory, or asks what changed since the last sync. Read sekit-mcp-guide and manage-assets first."
 ---
 
 # Sync the asset inventory from a source
 
 Mirror what a technical source (an AWS account, a Vercel team) holds into one client's Sekit
 asset inventory, and tell the person what moved. You may be an **agent user** with its own
-token (a scheduled bot) or a consultant's assistant; the rules are the same. Read
-**sekit-mcp-guide** (orientation, safety, error shapes) and **manage-assets** (the asset
-registry, field values, and `update_asset` rules) first. This skill adds only the sync.
+token (a scheduled bot) or a consultant's assistant. The sync is the same; only the review
+differs (below). Read **sekit-mcp-guide** (orientation, safety, error shapes) and
+**manage-assets** (the asset registry, field values, and `update_asset` rules) first. This
+skill adds only the sync.
+
+**People review your writes. You never archive.** As an agent user, each asset you create or
+update applies at once and also waits for a person's review in Sekit, under «Actualizaciones de
+agentes» (Agent updates). An asset you change again after its review waits again. A
+consultant's own writes through this connector apply directly and are not reviewed. Never mark
+your own writes reviewed: that sign-off is the person's. Never archive or restore an asset, not
+even one that disappeared from the source. Report it and let the person decide.
 
 The source is read-only to you. Use only calls that read. Never create, change, tag, or delete
 anything in AWS, Vercel, or any other source, even when a fix there looks obvious.
@@ -127,7 +135,8 @@ Classify every source resource, then every Sekit asset of the sources you read:
   for the creates and updates in this skill. A request to check, compare, or report what changed
   is a dry run: write nothing and report the plan.
 
-Asset writes apply directly. They are not queued in Agent updates.
+Asset writes apply at once. An agent user's create or update also opens an entry in
+«Actualizaciones de agentes» for a person to review. A consultant's own write opens none.
 
 ### 6. Report
 
@@ -135,6 +144,7 @@ End every run with this report, even when nothing changed:
 
 ```text
 Sync <source> → <client> (<scope read>)
+Review: N changes await review in Sekit under «Actualizaciones de agentes» (Agent updates)
 Created (N): <name> [<source>:<id>], ...
 Updated (N): <name>: <field> <old> → <new>, ...
 Unchanged: N
@@ -143,5 +153,11 @@ Archived in Sekit, still in the source (N): <name>, ... (left archived)
 Needs you (N): moved, possible duplicates, type mismatches, review criticality, missing supplier, ...
 Not read (N): <scope>: <reason>
 ```
+
+- **Review.** As an agent user, give the number of creates and updates you wrote and say they
+  await review in Sekit under «Actualizaciones de agentes». Write `applied directly, no review`
+  when a consultant ran the sync, and `dry run, nothing written` when you wrote nothing.
+- **Disappeared.** Name every disappeared asset with its reference, never only a count, and say
+  you did not archive it. Whether it goes is the person's call, made in Sekit.
 
 An error from one call does not stop the run. Report the asset and the error, then carry on.
