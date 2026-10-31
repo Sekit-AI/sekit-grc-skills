@@ -505,6 +505,34 @@ test('sync-asset-inventory says agent writes await review in Sekit and never arc
   assert.match(report[1], /Name every disappeared asset with its reference, never only a count/);
 });
 
+test('people in tool output are labels, never addresses (SK-843)', () => {
+  const oldClaims = /actor_name` their email|«<email> · vía|`approver_name` \(your email\)/;
+  for (const skillName of readdirSync(skillsRoot)) {
+    if (!statSync(resolve(skillsRoot, skillName)).isDirectory()) continue;
+    const source = readFileSync(resolve(skillsRoot, skillName, 'SKILL.md'), 'utf8');
+    const hit = source.match(oldClaims);
+    assert.equal(hit, null, `${skillName} still reads a person as an email: ${hit?.[0]}`);
+  }
+
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+  const section = guide.match(/## People in tool output — labels, not addresses\n([\s\S]*?)(?=\n## )/);
+  assert.ok(section, 'sekit-mcp-guide must keep the People in tool output section');
+  const rules = section[1];
+  for (const field of ['actor_name', 'actor.name', 'approver_name', 'collected_by_name',
+    'confirmed_by.name', 'added_by_name', 'unavailable_by_name', 'uploader_name', 'actor.email',
+    'confirmed_by.email']) {
+    assert.ok(rules.includes(`\`${field}\``), `People in tool output must name ${field}`);
+  }
+  for (const fallback of ['Miembro de {org}', 'Invitado', 'Usuario sin nombre']) {
+    assert.ok(rules.includes(fallback), `People in tool output must teach the ${fallback} fallback`);
+  }
+  assert.match(rules, /never treat a label as an address/);
+  assert.match(rules, /`null`\s+for anyone outside it/);
+
+  const deliverables = readFileSync(resolve(skillsRoot, 'manage-evidence-and-deliverables/SKILL.md'), 'utf8');
+  assert.match(deliverables, /never your email/);
+});
+
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
   assert.ok(existsSync(artifact), 'npm test must build dist/sekit-grc.plugin first');
   assert.doesNotThrow(() => execFileSync('unzip', ['-tq', artifact], { stdio: 'pipe' }));
