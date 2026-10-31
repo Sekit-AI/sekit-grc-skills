@@ -239,7 +239,8 @@ Solicitudes.
   (`gap_analysis_id`, `analysis_title`, `analysis_reason`, `evaluation_mode`), `due_date`,
   `delivery` (`email` or `link`), `closed`, its recipients (contacts by `client_contact_id`,
   members by `user_id`) and progress. Read it to pick the Solicitud and to see whether the
-  person already receives it.
+  person already receives it: match on those ids, since a member's `name` is a label and their
+  `email` may be `null` (see **sekit-mcp-guide** § People in tool output).
 - **`mint_portal_token(client_organization_id, contact_id, collection_session_id)`**: shares
   that Solicitud with the contact. **Always pass `collection_session_id`** (an open one,
   `closed: false`): a link minted without it belongs to no Solicitud, and the portal refuses it.
