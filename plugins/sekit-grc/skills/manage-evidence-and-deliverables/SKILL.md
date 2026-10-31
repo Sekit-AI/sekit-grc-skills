@@ -114,7 +114,10 @@ archiving stay in the console. Details and error shapes in **sekit-mcp-guide** �
   the team may approve (sign), idempotent. Stamps the approver (your user id and a snapshot of
   your name, never your email), `effective_date` (today), `next_review_date` (+6 months),
   `approved_at`. `approver_name` reads back as a label («Ana Vidal · Ciberkit»), not an
-  address; never use it to contact anyone (see **sekit-mcp-guide** § People in tool output).
+  address; never use it to contact anyone. An old approval stamped with an email shows it only
+  to the owning organization; anyone else gets `approver_name: null`, which does not mean the
+  artifact was never approved — read `status` and `approved_at` (see **sekit-mcp-guide** §
+  People in tool output).
 - **`revert_artifact_approval`** — `approved → draft`.
 - `archive_artifact` / `restore_artifact` — soft-delete / undo.
 

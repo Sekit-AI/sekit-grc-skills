@@ -519,7 +519,8 @@ test('people in tool output are labels, never addresses (SK-843)', () => {
   assert.ok(section, 'sekit-mcp-guide must keep the People in tool output section');
   const rules = section[1];
   for (const field of ['actor_name', 'actor.name', 'approver_name', 'collected_by_name',
-    'confirmed_by.name', 'added_by_name', 'unavailable_by_name', 'actor.email', 'confirmed_by.email']) {
+    'confirmed_by.name', 'added_by_name', 'unavailable_by_name', 'uploader_name', 'actor.email',
+    'confirmed_by.email']) {
     assert.ok(rules.includes(`\`${field}\``), `People in tool output must name ${field}`);
   }
   for (const fallback of ['Miembro de {org}', 'Invitado', 'Usuario sin nombre']) {

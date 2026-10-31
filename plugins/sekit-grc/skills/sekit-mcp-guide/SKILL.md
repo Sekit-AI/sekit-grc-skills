@@ -286,8 +286,8 @@ the person's label (see **People in tool output** below), never their email, and
 «<label> · vía <client>» — for example «Ana Vidal · Ciberkit · vía Claude» when that OAuth
 client is named Claude — or «<label> · vía token <name>» for a personal token (the English
 console says "via" and "via token"). Credencial reads «<client> (OAuth)» — «Claude (OAuth)»
-when the client is named Claude — or the token's name. A console session reads «Sesión de consola» / "Console
-session" and has no channel suffix. A person's
+when the client is named Claude — or the token's name. A console session reads «Sesión de
+consola» / "Console session" and has no channel suffix. A person's
 `import_control_evaluations` is the same edit: it applies directly, `summary` replaces the
 field, and no agent reasoning is stored. A personal-token write from before this change was
 stamped as an agent; Registro reads that row as the person.
@@ -395,17 +395,21 @@ the different view: the proposal-and-decision timeline of the Bandeja, not field
 
 Wherever a tool names a person — `actor_name` on versions and on
 `get_control_evaluation_activity`, `actor.name` in the audit log, `approver_name` on artifacts,
-`collected_by_name` on company-control tests, `confirmed_by.name` on Agent updates, and a
-Solicitud's recipient `name`, `added_by_name` and `unavailable_by_name` — the value is a
-**label**, not an email:
+`collected_by_name` on company-control tests, `confirmed_by.name` on Agent updates, a
+Solicitud's member recipient `name` (a contact recipient keeps the contact's own name),
+`added_by_name` and `unavailable_by_name`, and `uploader_name` on the board's
+`pending_changes[]` and the ask's `changes[]` — the value is a **label**, not an email.
+`uploader_name` is the uploader's label when the file records who uploaded it; otherwise it is
+the text stamped at upload time (a contact's name, for example):
 
 - while the person reaches the client company: their name and organization, «Ana Vidal ·
   Ciberkit» (their name alone when they have no organization);
 - once they lost access or left: their name alone, «Laura Pérez». History keeps that name;
 - fallbacks: «Miembro de {org}» when they have no display name, «Invitado» when they have
-  neither a name nor an organization, «Usuario sin nombre» when they left with no name. The
-  label is written in the company's deliverables language, so an English company reads
-  "Member of {org}", "Guest" and "Unnamed user".
+  neither a name nor an organization, «Usuario sin nombre» when they left with no name. On
+  company data the label is written in the company's deliverables language, so an English
+  company reads "Member of {org}", "Guest" and "Unnamed user"; organization-level audit rows
+  with no company use Spanish.
 
 A label is display text, and Sekit withholds other organizations' addresses on purpose, so
 never treat a label as an address, derive an email from it, or offer to write to it. An email
@@ -413,8 +417,10 @@ appears only for yourself and for people in your own organization: a Solicitud r
 `email`, `confirmed_by.email`, `decision.email` and the audit log's `actor.email` are `null`
 for anyone outside it. To reach someone, use the contact or the portal link, never a guessed
 address. Identify people by their ids (`user_id`, `client_contact_id`), not by label: two
-people can share a name, and a label changes when access does. Old approvals may still carry an
-email in `approver_name`; only the owning organization sees those.
+people can share a name, and a label changes when access does. Old approvals and uploads may
+still carry an email in `approver_name` / `uploader_name`; only the owning organization sees
+those, and anyone else gets `null`. A `null` `approver_name` on an approved artifact does not
+mean it was never approved: read `status` and `approved_at`.
 
 ## Result + error shapes (no exceptions — read the value)
 
