@@ -1,6 +1,6 @@
 ---
 name: manage-assets
-description: "Register and maintain a Sekit client's asset inventory over the consultant MCP: people, third parties, information (data categories), systems, and devices, each with a criticality and an owner. Create, update, and archive assets with the right class (cloud, saas, laptop, phone, ...), per-class details, and references (a system's supplier, a device's assignee, where data lives). Link an asset to the risks, gap analyses, or control evaluations it concerns as owner, affected, processor, or custodian. Bridge a person asset to a client contact, share an open Solicitud with them for portal access, and list or revoke their portal links. Use whenever the user wants to add or edit a client's people, vendors, data categories, systems, laptops, or phones, set an owner or criticality, record who holds a device or where data is stored, connect assets to the work that concerns them, or give a client person portal access. Framework-agnostic. Read the sekit-mcp-guide skill first."
+description: "Register and maintain a Sekit client's asset inventory over the consultant MCP: people, third parties, information (data categories), systems, and devices, each with a criticality and an owner. Create, update, and archive assets with the right class, per-class details, and references (a system's supplier, a device's assignee, where data lives). Link an asset to the risks, gap analyses, or control evaluations it concerns as owner, affected, processor, or custodian. Bridge a person asset to a client contact, share an open Solicitud with them for portal access, and list or revoke their portal links. Use whenever the user wants to add or edit a client's people, vendors, data categories, systems, laptops, or phones, set an owner or criticality, learn where an ISMS fact comes from, record who holds a device or where data is stored, connect assets to the work that concerns them, or give a client person portal access. Framework-agnostic. Read the sekit-mcp-guide skill first."
 ---
 
 # Manage assets
@@ -16,9 +16,10 @@ protocol, error/result shapes, and the safety rules all apply here.
 The user wants to register or edit a client's people / vendors / data categories / systems /
 devices, set an asset's owner or criticality, record a system's supplier, a device's holder or
 where data lives, or make the relationship between an asset and some work (a risk, a gap, a
-control) explicit. You are the consultant's hands: propose, they decide. Ground the inventory in
-what's actually known about the client (the wiki, declared facts, uploaded files); don't invent
-assets, and don't invent answers for them.
+control) explicit. A person decides: in a conversation they confirm before you write, and an
+agent user's writes wait for their review. Ground every value in a basis you can name (your
+instructions, the wiki, declared facts, uploaded files, a source you read, or your own assessment
+stated as one) and give that basis in `reasoning`. Don't invent assets or answers.
 To keep the inventory in step with AWS, Vercel, or another technical source, use
 **sync-asset-inventory**.
 
@@ -103,6 +104,28 @@ Every field is optional except a device's `ownership`. All values are strings.
   link to say "this system is *affected* by that risk" or "this person is the *owner* of that
   control evaluation's remediation".
 
+## Facts a source does not hold
+
+A technical source (a cloud account, a SaaS admin console) names systems and a few settings.
+An ISMS also needs the facts below. Filling them is part of the job, whether you are an agent or
+a consultant's assistant. The table says what each fact is and where it usually comes from. The
+places it lists are where to look first: none of them is required, and the tools named are only
+examples.
+
+| Fact | Field | What it is | Where it usually comes from |
+|---|---|---|---|
+| Owner | `owner_asset_id` | The person accountable for the asset: who decides who gets access and answers for its risks. Not always the person who operates it. | A role or team list in the wiki, the account's admin or billing contact, whoever approves access requests. |
+| Information assets | `asset_type: "information"` | The categories of data the client holds (customer records, payroll, source code), apart from the systems that hold them. | The records of processing (RoPA), contracts, the privacy notice, what each application stores and why. |
+| Data location | `location_asset_ids` | The systems and vendors that store or process a data category. | Architecture notes, which application or service the data is entered in, the vendor list and its DPAs. |
+| Classification | `classification` | How much harm disclosure would do: `public`, `internal`, `confidential`, `restricted`. | The client's classification policy. Without one, judge by content: personal, financial, or secret business data is at least `confidential`. |
+| Criticality | `criticality` | How much the business suffers if the asset is unavailable, wrong, or exposed. | What depends on it (production, revenue, payroll), a business impact analysis or continuity plan, the data it holds. |
+| Personal and health data | `personal_data`, `health_data` | Whether the data identifies people, and whether it reveals their health (a special category under GDPR). | The RoPA, the privacy notice, the fields an application collects, HR and sick-leave processes. |
+| MFA and authentication | `mfa`, `authentication` | Whether signing in to a service asks for a second factor; how users of an application sign in (SSO, password, magic link). | The service's or the identity provider's security settings (for example Google Workspace, Microsoft Entra ID, Okta), the SSO configuration, the login page. |
+| Device fields | `ownership`, `os`, `disk_encrypted` | Who owns a device, its operating system, whether its disk is encrypted. | A device-management tool's inventory (for example Intune, Jamf), the IT asset list, or the person who holds the device. |
+
+When nothing gives an answer, record `unknown` on a yes/no field or leave the field out, and say
+in `reasoning` what is missing.
+
 ## Process
 
 ### 1. Orient + resolve the client
@@ -135,6 +158,7 @@ Pick the row in the **Asset registry** and fill only its fields. `create_asset` 
 | `owner_asset_id` | the person asset that owns this one |
 | `description` | free text |
 | `email`, `role` | for person assets (`email` valid or blank; `role` is the job / functional role, e.g. "CISO", distinct from an asset-link role) |
+| `reasoning` | optional free text, one per call: the basis for the values you send (the source, a wiki page, an instruction, your own assessment). The person who reviews an agent user's write reads it beside the change. `update_asset` takes it too. |
 
 Two common shapes:
 
