@@ -1,6 +1,6 @@
 ---
 name: sync-asset-inventory
-description: "Keep a Sekit client's asset inventory in step with a technical source such as AWS or Vercel, as an agent or consultant with read access to that source. Read the source, look each resource up in Sekit by its external_ref, create the missing ones with the right type, class, fields, and reference, update the ones that changed, leave unchanged ones alone, never archive, and report the ones that disappeared from the source to the person. An agent user's writes wait for a person's review in Sekit under Agent updates, and the report says so. Use whenever someone or a scheduled run asks to sync, import, reconcile, refresh, or mirror cloud accounts, Vercel projects, domains, or other infrastructure into a client's Sekit inventory, or asks what changed since the last sync. Read sekit-mcp-guide and manage-assets first."
+description: "Keep a Sekit client's asset inventory in step with a technical source such as AWS or Vercel, as an agent or consultant with read access to that source. Read the source, look each resource up in Sekit by its external_ref, create the missing ones with the right type, class, fields, and reference, update the ones that changed, leave unchanged ones alone, fill any other field (owner, criticality, information assets, classification) it has a basis for and say why on each write, never archive, and report the ones that disappeared from the source to the person. An agent user's writes wait for a person's review in Sekit under Agent updates, and the report says so. Use whenever someone or a scheduled run asks to sync, import, reconcile, refresh, or mirror cloud accounts, Vercel projects, domains, or other infrastructure into a client's Sekit inventory, or asks what changed since the last sync. Read sekit-mcp-guide and manage-assets first."
 ---
 
 # Sync the asset inventory from a source
@@ -43,6 +43,17 @@ Each synced asset carries `external_ref: {source, id}`, its identity in the sour
 
 ## What maps to what
 
+Each agent maps its own source. The pattern is the same for every provider:
+
+- `external_ref.source` is the provider's lowercase token.
+- `external_ref.id` is `<kind>:<immutable id>`. When a resource can move between scopes (a
+  project between teams), put the scope in the id too: `<kind>:<scope id>/<resource id>`.
+- `asset_type` and `asset_class` come from the **manage-assets** registry.
+- `name` is the source's human label: the account alias or name, the project name, the domain.
+- `details` holds the registry keys the source actually tells you.
+
+Worked examples, for two providers:
+
 | Source resource | `external_ref` | `asset_type` / `asset_class` | `details` the source fills |
 |---|---|---|---|
 | AWS account | `{"source": "aws", "id": "account:<12-digit account id>"}` | `system` / `cloud` | `account`: the account id |
@@ -50,30 +61,40 @@ Each synced asset carries `external_ref: {source, id}`, its identity in the sour
 | Vercel project | `{"source": "vercel", "id": "project:<team id>/<project id>"}` | `system` / `application` | none |
 | Vercel domain | `{"source": "vercel", "id": "domain:<team id>/<domain name>"}` | `system` / `domain` | none |
 
-- `name` is the source's human label: the account alias or name, the team or project name, the
-  domain.
-- Fill `region` and `environment` only when the person states them. The source does not say
-  which account is production.
+- The source does not say which account is production. Set `environment` from your
+  instructions, a naming or tagging convention you can point to, or leave it out.
 - The id names its scope (the account, the team), so you can tell which read an asset belongs
   to. The part after `<team id>/` is the resource's own id, which a move between teams keeps.
-- That is the default scope. Sync other resources (an S3 bucket, an RDS database) only when the
-  person asks, with the ARN as the id (`{"source": "aws", "id": "<ARN>"}`) and the class from
-  the **manage-assets** registry. Another provider follows the same pattern:
-  `<kind>:<immutable id>` under the provider's token.
-- Do not derive `information` assets (data categories) from infrastructure. What data a system
-  holds is the person's call.
+- Other resources follow the same pattern. An AWS resource with an ARN (an S3 bucket, an RDS
+  database) uses the ARN as its id (`{"source": "aws", "id": "<ARN>"}`), since an ARN already
+  names its kind and account.
 
-**What the sync owns.** The sync writes `name` and the `details` keys in the table. Everything
-else belongs to the person: `criticality`, `owner_asset_id`, `description`, other `details`
-keys (`mfa`, `authentication`), references, and links. Never change or clear those.
+**Fields beyond the source.** `name` and the `details` keys the source tells you are the
+**sync-owned** fields: the ones the reconcile below compares with the source. An ISMS needs
+more than a source holds: an owner, a criticality, the information assets a system holds and
+where they live, classification, personal and health data, MFA, device fields. Fill any of
+them, on assets you create or ones that already exist, when you have a basis: your
+instructions, the client's wiki and files, another source you can read, or your own assessment.
+**manage-assets** § Facts a source does not hold says what each fact is and where it usually
+comes from. A person reviews these writes like any other (above).
 
-**On create only:**
+- **Say why.** Send `reasoning` with every `create_asset` and `update_asset`: one or two
+  sentences on where the values came from, for example "AWS account 123456789012, alias
+  prod-main. Criticality high: it runs the payroll application (wiki: Sistemas)." The person
+  who reviews the write reads it beside the change.
+- **A stored value is the current answer.** Change it when your basis says it is wrong, and say
+  why in `reasoning`, so a run does not undo an answer someone gave.
+- **No duplicates.** Before you create an asset that has no reference (an information asset,
+  the owner's person asset), look for it in the step 3 list by type and name, and update the one
+  you find.
 
-- `criticality` comes from the person's instruction. Without one, use `medium` and list the
-  asset under "review criticality" in the report.
-- Set `supplier_asset_id` when the client has a live `third_party` asset for the provider
-  (Amazon Web Services, Vercel). If it has none, leave the supplier unset and say so in the
-  report. Do not create the vendor yourself.
+**On create:**
+
+- `criticality` is required. Set it from your instructions, from what the source shows the
+  system does, or from your own assessment, and give the basis in `reasoning`.
+- Set `supplier_asset_id` to the client's live `third_party` asset for the provider (Amazon Web
+  Services, Vercel). If the client has none, create it or leave the supplier unset, and say
+  which in the report.
 
 ## Process
 
@@ -108,6 +129,10 @@ Classify every source resource, then every Sekit asset of the sources you read:
 | has it | no match | **create** | `create_asset` with the reference |
 | no longer has it | live asset with a reference from a scope you read in full | **disappeared** | none; report it |
 
+The table compares only the sync-owned fields. A field you fill from § Fields beyond the source,
+on an asset the table calls unchanged or on one without a reference, is an update: report it
+under Updated with its basis.
+
 - **Update.** `details` replaces the stored object. Right before the write, re-read the asset
   with `get_asset` and send its current `details` with the source's keys overlaid, so the
   person's keys survive, including an edit made while you waited for the go-ahead. Send `name`
@@ -123,13 +148,14 @@ Classify every source resource, then every Sekit asset of the sources you read:
   A resource can vanish from a read for reasons that are not deletion (permissions, a moved
   project), and the asset may anchor risks and evidence. The person decides. An asset of a scope
   you did not read is "not seen": report it, never as disappeared.
-- Touch nothing else: no assets without a reference, no assets of a source you did not read, no
-  asset links, no contacts.
+- Assets without a reference, and assets of a source you did not read, are outside this table:
+  never report them as disappeared and never match them by reference. Update them only for a
+  field you have a basis for, as in § Fields beyond the source.
 
 ### 5. Confirm, then write
 
 - **A person is in the conversation:** show the plan (counts, plus each create and each update
-  with old → new) and wait for a go-ahead before the first write.
+  with old → new and its basis) and wait for a go-ahead before the first write.
 - **An unattended run** (a schedule, a bot): only a standing instruction that explicitly asks to
   sync, import, or write the source into the named client's inventory is the go-ahead, and only
   for the creates and updates in this skill. A request to check, compare, or report what changed
@@ -145,12 +171,12 @@ End every run with this report, even when nothing changed:
 ```text
 Sync <source> → <client> (<scope read>)
 Review: N changes await review in Sekit under «Actualizaciones de agentes» (Agent updates)
-Created (N): <name> [<source>:<id>], ...
+Created (N): <name> [<source>:<id>, or no reference], ...
 Updated (N): <name>: <field> <old> → <new>, ...
 Unchanged: N
 Disappeared from the source, still live in Sekit (N): <name> [<source>:<id>], ... (not archived; your call)
 Archived in Sekit, still in the source (N): <name>, ... (left archived)
-Needs you (N): moved, possible duplicates, type mismatches, review criticality, missing supplier, ...
+Needs you (N): moved, possible duplicates, type mismatches, supplier missing or created, ...
 Not read (N): <scope>: <reason>
 ```
 

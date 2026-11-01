@@ -445,8 +445,8 @@ test('sync-asset-inventory teaches the SK-940 external_ref contract and never ar
       .slice(1)
       .map((line) => line.split('|').slice(1, -1).map((cell) => cell.trim()));
 
-  const mapping = skill.match(/\n## What maps to what\n([\s\S]*?)(?=\n- )/);
-  assert.ok(mapping, 'sync-asset-inventory must keep the mapping table');
+  const mapping = skill.match(/\nWorked examples, for two providers:\n([\s\S]*?)(?=\n- )/);
+  assert.ok(mapping, 'sync-asset-inventory must keep the worked-example mapping table');
   // Classes and details keys from the server's templates (see the SK-939 test above).
   const fields = { cloud: ['account', 'region', 'environment'], application: ['authentication', 'integrations'], domain: [] };
   assert.deepEqual(
@@ -503,6 +503,35 @@ test('sync-asset-inventory says agent writes await review in Sekit and never arc
   assert.equal(template[1], 'Review: N changes await review in Sekit under «Actualizaciones de agentes» (Agent updates)');
   assert.ok(template.some((line) => line.startsWith('Disappeared from the source, still live in Sekit (N): <name> [<source>:<id>]') && line.endsWith('(not archived; your call)')));
   assert.match(report[1], /Name every disappeared asset with its reference, never only a count/);
+});
+
+test('asset skills let agents fill any field and ask for a reasoning on every write (SK-990, SK-998)', () => {
+  const sync = readFileSync(resolve(skillsRoot, 'sync-asset-inventory/SKILL.md'), 'utf8');
+  const assets = readFileSync(resolve(skillsRoot, 'manage-assets/SKILL.md'), 'utf8');
+
+  // SK-990: the skills no longer reserve fields for a person or prescribe a criticality.
+  for (const retired of [/Do not derive `information` assets/, /belongs to the person/, /review criticality/, /use `medium`/, /Do not create the vendor/, /That is the default scope/]) {
+    assert.doesNotMatch(sync, retired);
+  }
+  const pattern = sync.match(/\n## What maps to what\n([\s\S]*?)\nWorked examples/);
+  assert.ok(pattern, 'the generic mapping pattern comes before the worked examples');
+  assert.match(pattern[1], /`<kind>:<immutable id>`/);
+  assert.match(sync, /manage-assets\*\* § Facts a source does not hold/);
+
+  const facts = assets.match(/\n## Facts a source does not hold\n([\s\S]*?)(?=\n## )/);
+  assert.ok(facts, 'manage-assets must say what each fact is and where it usually comes from');
+  for (const field of ['owner_asset_id', 'location_asset_ids', 'criticality']) {
+    assert.ok(facts[1].includes(`\`${field}\``), `Facts a source does not hold must cover ${field}`);
+  }
+  assert.match(facts[1], /only\s+examples/);
+  // The ISMS facts that live in details say so, or an agent sends them top level and they are dropped.
+  for (const key of ['classification', 'personal_data', 'health_data', 'mfa', 'authentication', 'ownership', 'disk_encrypted']) {
+    assert.ok(facts[1].includes(`\`details.${key}\``), `Facts a source does not hold must place ${key} in details`);
+  }
+
+  // SK-998: an optional reasoning on create_asset and update_asset.
+  assert.match(assets, /\| `reasoning` \| optional free text, one per call/);
+  assert.match(sync, /Send `reasoning` with every `create_asset` and `update_asset`/);
 });
 
 test('people in tool output are labels, never addresses (SK-843)', () => {
