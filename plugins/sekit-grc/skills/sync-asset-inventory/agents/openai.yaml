@@ -1,6 +1,6 @@
 interface:
   display_name: "Sync Sekit Asset Inventory"
-  short_description: "Mirror AWS or Vercel resources into a client's assets"
+  short_description: "Mirror a technical source into a client's assets"
   default_prompt: "Use $sync-asset-inventory to sync a source's resources into a Sekit client's asset inventory."
 dependencies:
   tools:
