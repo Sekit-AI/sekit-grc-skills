@@ -520,10 +520,14 @@ test('asset skills let agents fill any field and ask for a reasoning on every wr
 
   const facts = assets.match(/\n## Facts a source does not hold\n([\s\S]*?)(?=\n## )/);
   assert.ok(facts, 'manage-assets must say what each fact is and where it usually comes from');
-  for (const field of ['owner_asset_id', 'location_asset_ids', 'classification', 'criticality', 'personal_data', 'health_data', 'mfa', 'authentication', 'ownership', 'disk_encrypted']) {
+  for (const field of ['owner_asset_id', 'location_asset_ids', 'criticality']) {
     assert.ok(facts[1].includes(`\`${field}\``), `Facts a source does not hold must cover ${field}`);
   }
   assert.match(facts[1], /only\s+examples/);
+  // The ISMS facts that live in details say so, or an agent sends them top level and they are dropped.
+  for (const key of ['classification', 'personal_data', 'health_data', 'mfa', 'authentication', 'ownership', 'disk_encrypted']) {
+    assert.ok(facts[1].includes(`\`details.${key}\``), `Facts a source does not hold must place ${key} in details`);
+  }
 
   // SK-998: an optional reasoning on create_asset and update_asset.
   assert.match(assets, /\| `reasoning` \| optional free text, one per call/);

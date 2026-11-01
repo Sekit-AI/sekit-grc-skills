@@ -117,14 +117,15 @@ examples.
 | Owner | `owner_asset_id` | The person accountable for the asset: who decides who gets access and answers for its risks. Not always the person who operates it. | A role or team list in the wiki, the account's admin or billing contact, whoever approves access requests. |
 | Information assets | `asset_type: "information"` | The categories of data the client holds (customer records, payroll, source code), apart from the systems that hold them. | The records of processing (RoPA), contracts, the privacy notice, what each application stores and why. |
 | Data location | `location_asset_ids` | The systems and vendors that store or process a data category. | Architecture notes, which application or service the data is entered in, the vendor list and its DPAs. |
-| Classification | `classification` | How much harm disclosure would do: `public`, `internal`, `confidential`, `restricted`. | The client's classification policy. Without one, judge by content: personal, financial, or secret business data is at least `confidential`. |
+| Classification | `details.classification` | How much harm disclosure would do: `public`, `internal`, `confidential`, `restricted`. | The client's classification policy. Without one, judge by content: personal, financial, or secret business data is at least `confidential`. |
 | Criticality | `criticality` | How much the business suffers if the asset is unavailable, wrong, or exposed. | What depends on it (production, revenue, payroll), a business impact analysis or continuity plan, the data it holds. |
-| Personal and health data | `personal_data`, `health_data` | Whether the data identifies people, and whether it reveals their health (a special category under GDPR). | The RoPA, the privacy notice, the fields an application collects, HR and sick-leave processes. |
-| MFA and authentication | `mfa`, `authentication` | Whether signing in to a service asks for a second factor; how users of an application sign in (SSO, password, magic link). | The service's or the identity provider's security settings (for example Google Workspace, Microsoft Entra ID, Okta), the SSO configuration, the login page. |
-| Device fields | `ownership`, `os`, `disk_encrypted` | Who owns a device, its operating system, whether its disk is encrypted. | A device-management tool's inventory (for example Intune, Jamf), the IT asset list, or the person who holds the device. |
+| Personal and health data | `details.personal_data`, `details.health_data` | Whether the data identifies people, and whether it reveals their health (a special category under GDPR). | The RoPA, the privacy notice, the fields an application collects, HR and sick-leave processes. |
+| MFA and authentication | `details.mfa` (`saas`), `details.authentication` (`application`) | Whether signing in to a service asks for a second factor; how users of an application sign in (SSO, password, magic link). | The service's or the identity provider's security settings (for example Google Workspace, Microsoft Entra ID, Okta), the SSO configuration, the login page. |
+| Device fields | `details.ownership`, `details.os`, `details.disk_encrypted` | Who owns a device, its operating system, whether its disk is encrypted. | A device-management tool's inventory (for example Intune, Jamf), the IT asset list, or the person who holds the device. |
 
-When nothing gives an answer, record `unknown` on a yes/no field or leave the field out, and say
-in `reasoning` what is missing.
+A `details.` field goes inside `details`, only on the type and class the **Asset registry** lists
+for it; on update, resend the stored `details` with your change. When nothing gives an answer,
+record `unknown` on a yes/no field or leave the field out, and say in `reasoning` what is missing.
 
 ## Process
 

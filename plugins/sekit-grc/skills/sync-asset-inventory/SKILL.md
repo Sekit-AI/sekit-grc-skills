@@ -129,6 +129,10 @@ Classify every source resource, then every Sekit asset of the sources you read:
 | has it | no match | **create** | `create_asset` with the reference |
 | no longer has it | live asset with a reference from a scope you read in full | **disappeared** | none; report it |
 
+The table compares only the sync-owned fields. A field you fill from § Fields beyond the source,
+on an asset the table calls unchanged or on one without a reference, is an update: report it
+under Updated with its basis.
+
 - **Update.** `details` replaces the stored object. Right before the write, re-read the asset
   with `get_asset` and send its current `details` with the source's keys overlaid, so the
   person's keys survive, including an edit made while you waited for the go-ahead. Send `name`
@@ -167,12 +171,12 @@ End every run with this report, even when nothing changed:
 ```text
 Sync <source> → <client> (<scope read>)
 Review: N changes await review in Sekit under «Actualizaciones de agentes» (Agent updates)
-Created (N): <name> [<source>:<id>], ...
+Created (N): <name> [<source>:<id>, or no reference], ...
 Updated (N): <name>: <field> <old> → <new>, ...
 Unchanged: N
 Disappeared from the source, still live in Sekit (N): <name> [<source>:<id>], ... (not archived; your call)
 Archived in Sekit, still in the source (N): <name>, ... (left archived)
-Needs you (N): moved, possible duplicates, type mismatches, missing supplier, ...
+Needs you (N): moved, possible duplicates, type mismatches, supplier missing or created, ...
 Not read (N): <scope>: <reason>
 ```
 
