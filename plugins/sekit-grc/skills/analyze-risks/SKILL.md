@@ -105,8 +105,8 @@ Useful **optional** fields:
   linked controls (`control_links`) — the server derives `derived_domains` from them —
   never as standalone attributes.
 - `report_visibility` — string list of audience tiers; the contract enum is
-  `"executive"`, `"technical"`, `"audit"`, `"internal_only"` (NOT `"client_facing"` — Sekit
-  rejects an off-contract tier with a 422).
+  `"executive"`, `"technical"`, `"audit"` (NOT `"client_facing"` — Sekit
+  rejects an off-contract tier with a 422). On `create_risk`, omitting it gives `["technical"]`.
 
 **Two-layer description (recommended).** Write `description` for the consultant (technical —
 cite controls, evidence, specifics) and a plain-language business consequence the SME can read

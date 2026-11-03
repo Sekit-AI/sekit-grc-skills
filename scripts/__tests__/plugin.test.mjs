@@ -590,6 +590,18 @@ test('people in tool output are labels, never addresses (SK-843)', () => {
   assert.match(deliverables, /never your email/);
 });
 
+test('no skill teaches a field Sekit dropped, and the guide lists company access (SK-846)', () => {
+  // Sekit refuses these on the wire since SK-846, so a skill that teaches one earns a 422.
+  for (const skillName of readdirSync(skillsRoot)) {
+    if (!statSync(resolve(skillsRoot, skillName)).isDirectory()) continue;
+    const source = readFileSync(resolve(skillsRoot, skillName, 'SKILL.md'), 'utf8');
+    const hit = source.match(/internal_only|engagement_type|client_since/);
+    assert.equal(hit, null, `${skillName} still teaches the dropped ${hit?.[0]}`);
+  }
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+  assert.match(guide, /\| \*\*Company access\*\*[^\n]*`list_company_access`/);
+});
+
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
   assert.ok(existsSync(artifact), 'npm test must build dist/sekit-grc.plugin first');
   assert.doesNotThrow(() => execFileSync('unzip', ['-tq', artifact], { stdio: 'pipe' }));
