@@ -39,6 +39,8 @@ exactly this.
 | `third_party` | none (omit) | none | none |
 | `information` | none (omit) | `classification`, `personal_data`, `health_data`, `access` | `location_asset_ids` |
 | `system` | `cloud` | `account`, `region`, `environment` | `supplier_asset_id` |
+| `system` | `data_store` | `environment`, `encrypted_at_rest`, `public_access` | `supplier_asset_id` |
+| `system` | `compute` | `environment` | `supplier_asset_id` |
 | `system` | `saas` | `mfa`, `receives_user_data` | `supplier_asset_id` |
 | `system` | `application` | `authentication`, `integrations` | `supplier_asset_id` |
 | `system` | `repository` | `auto_deploy` | `supplier_asset_id` |
@@ -47,18 +49,23 @@ exactly this.
 
 Picking the type: a data category the client holds (customer data, HR records) is
 `information`; a vendor, processor, or provider is `third_party`; an endpoint is a `device`.
-Picking a system class: `cloud` for an IaaS/PaaS account or project (AWS, Azure, GCP), `saas`
-for a subscribed service (Workspace, Slack), `application` for software the client builds or
-runs, `repository` for a code repository, `backup` for a backup set or service, `domain` for a
-domain name, `other` for anything else.
+Picking a system class: `cloud` for a whole IaaS/PaaS account or project (an AWS account, an
+Azure subscription, a GCP project), `data_store` for one bucket, database, or shared drive inside
+it or elsewhere (an S3 bucket or an RDS database), `compute` for one server, instance, function,
+or container (an EC2 instance or a Lambda), `saas` for a subscribed service (Workspace, Slack),
+`application` for software the client builds or runs, `repository` for a code repository,
+`backup` for a backup set or service, `domain` for a domain name, `other` for anything else. The
+account and the resources in it are separate assets: register a data store or a compute resource
+on its own when its data, exposure, or environment matters for the engagement, and leave it under
+its account when it does not (**sync-asset-inventory** § How fine to go).
 
 ### Field values
 
 | Field | Values |
 |---|---|
 | `classification` | `public` \| `internal` \| `confidential` \| `restricted` |
-| `personal_data`, `health_data`, `mfa`, `receives_user_data`, `auto_deploy`, `disk_encrypted` | `yes` \| `no` \| `unknown` |
-| `environment` | `production` \| `other` |
+| `personal_data`, `health_data`, `mfa`, `receives_user_data`, `auto_deploy`, `disk_encrypted`, `encrypted_at_rest`, `public_access` | `yes` \| `no` \| `unknown` |
+| `environment` | `production` \| `staging` \| `development` \| `other` |
 | `ownership` | `company` \| `personal` (required on every device) |
 | `account`, `region`, `authentication`, `integrations`, `access`, `os` | free text |
 
@@ -121,6 +128,8 @@ examples.
 | Criticality | `criticality` | How much the business suffers if the asset is unavailable, wrong, or exposed. | What depends on it (production, revenue, payroll), a business impact analysis or continuity plan, the data it holds. |
 | Personal and health data | `details.personal_data`, `details.health_data` | Whether the data identifies people, and whether it reveals their health (a special category under GDPR). | The RoPA, the privacy notice, the fields an application collects, HR and sick-leave processes. |
 | MFA and authentication | `details.mfa` (`saas`), `details.authentication` (`application`) | Whether signing in to a service asks for a second factor; how users of an application sign in (SSO, password, magic link). | The service's or the identity provider's security settings (for example Google Workspace, Microsoft Entra ID, Okta), the SSO configuration, the login page. |
+| Environment | `details.environment` (`cloud`, `data_store`, `compute`) | Whether the asset runs production, staging, or development work. An auditor samples production, and a test copy of real data still holds that data. | Naming or tagging conventions, separate accounts per stage, the client's architecture notes. |
+| Data store exposure | `details.encrypted_at_rest`, `details.public_access` (`data_store`) | Whether the stored data is encrypted on disk, and whether anyone outside the client can read it without signing in (a public bucket or share link). | The provider's console or configuration (for example bucket policies, database encryption settings), infrastructure-as-code, a cloud security posture tool. |
 | Device fields | `details.ownership`, `details.os`, `details.disk_encrypted` | Who owns a device, its operating system, whether its disk is encrypted. | A device-management tool's inventory (for example Intune, Jamf), the IT asset list, or the person who holds the device. |
 
 A `details.` field goes inside `details`, only on the type and class the **Asset registry** lists
