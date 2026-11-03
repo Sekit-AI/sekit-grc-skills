@@ -41,6 +41,30 @@ Each synced asset carries `external_ref: {source, id}`, its identity in the sour
   skips the class, `details`, and reference checks and applies nothing. A create is therefore safe
   to retry, but it is never an update.
 
+## How fine to go
+
+A source can list thousands of resources, and an inventory nobody can read helps no one. Register
+what the client's framework will ask about, at the level an auditor or the risk analysis looks
+at. This is guidance: your instructions or the person's call override it, and the reasoning on
+each write says which level you chose.
+
+- **ISO 27001, in a small or mid-sized company:** the service or account level is usually
+  enough. A `cloud` asset per account or project, with its `environment`, plus the `saas` and
+  `application` assets around it, gives the risk analysis what it needs. Register a single data
+  store or server on its own only when it stands out, for example the database that holds
+  customer or health data.
+- **SOC 2:** record the in-scope production components as their own assets: each `data_store`
+  (an S3 bucket, an RDS database) and each `compute` resource (an EC2 instance, a Lambda) that
+  serves the system under audit, with `environment` set. The auditor picks samples from that
+  population, so a component missing from it is a component nobody can show was controlled.
+  Staging and development components belong in the inventory too when they hold production data.
+- **Several frameworks, or none named:** follow the stricter level for the systems in scope of
+  the stricter framework, and the account level elsewhere.
+
+Fill `encrypted_at_rest` and `public_access` on a `data_store` when the source tells you, and
+record `unknown` when it does not: an exposed or unencrypted store is the first thing a reviewer
+looks for.
+
 ## What maps to what
 
 Each agent maps its own source. The pattern is the same for every provider:
@@ -67,7 +91,9 @@ Worked examples, for two providers:
   to. The part after `<team id>/` is the resource's own id, which a move between teams keeps.
 - Other resources follow the same pattern. An AWS resource with an ARN (an S3 bucket, an RDS
   database) uses the ARN as its id (`{"source": "aws", "id": "<ARN>"}`), since an ARN already
-  names its kind and account.
+  names its kind and account. A bucket, database, or shared drive is `system` / `data_store`; a
+  server, instance, function, or container is `system` / `compute` (see the **manage-assets**
+  registry).
 
 **Fields beyond the source.** `name` and the `details` keys the source tells you are the
 **sync-owned** fields: the ones the reconcile below compares with the source. An ISMS needs

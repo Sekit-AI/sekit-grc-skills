@@ -334,7 +334,7 @@ test('every control-evaluation write names its gap analysis (SK-873)', () => {
 });
 
 test('manage-assets teaches every asset type, class, field and reference Sekit validates (SK-939)', () => {
-  // Mirrors the asset templates the Sekit server's asset service validates (SK-935).
+  // Mirrors the asset templates the Sekit server's asset service validates (SK-935, SK-1001).
   const device = ['ownership', 'os', 'disk_encrypted'];
   const templates = {
     person: { '': [] },
@@ -342,6 +342,8 @@ test('manage-assets teaches every asset type, class, field and reference Sekit v
     information: { '': ['classification', 'personal_data', 'health_data', 'access'] },
     system: {
       cloud: ['account', 'region', 'environment'],
+      data_store: ['environment', 'encrypted_at_rest', 'public_access'],
+      compute: ['environment'],
       saas: ['mfa', 'receives_user_data'],
       application: ['authentication', 'integrations'],
       repository: ['auto_deploy'],
@@ -361,7 +363,9 @@ test('manage-assets teaches every asset type, class, field and reference Sekit v
     receives_user_data: answer,
     auto_deploy: answer,
     disk_encrypted: answer,
-    environment: ['production', 'other'],
+    encrypted_at_rest: answer,
+    public_access: answer,
+    environment: ['production', 'staging', 'development', 'other'],
     ownership: ['company', 'personal'],
     account: text,
     region: text,
@@ -448,7 +452,13 @@ test('sync-asset-inventory teaches the SK-940 external_ref contract and never ar
   const mapping = skill.match(/\nWorked examples, for two providers:\n([\s\S]*?)(?=\n- )/);
   assert.ok(mapping, 'sync-asset-inventory must keep the worked-example mapping table');
   // Classes and details keys from the server's templates (see the SK-939 test above).
-  const fields = { cloud: ['account', 'region', 'environment'], application: ['authentication', 'integrations'], domain: [] };
+  const fields = {
+    cloud: ['account', 'region', 'environment'],
+    data_store: ['environment', 'encrypted_at_rest', 'public_access'],
+    compute: ['environment'],
+    application: ['authentication', 'integrations'],
+    domain: [],
+  };
   assert.deepEqual(
     tableRows(mapping[1]).map(([resource, ref, typeClass, details]) => [resource, ref, typeClass, [...details.matchAll(/`([a-z_]+)`/g)].map((m) => m[1])]),
     [
@@ -459,7 +469,7 @@ test('sync-asset-inventory teaches the SK-940 external_ref contract and never ar
     ],
   );
   for (const [, , typeClass, details] of tableRows(mapping[1])) {
-    const assetClass = typeClass.match(/`system` \/ `([a-z]+)`/)[1];
+    const assetClass = typeClass.match(/`system` \/ `([a-z_]+)`/)[1];
     for (const [, key] of details.matchAll(/`([a-z_]+)`/g)) assert.ok(fields[assetClass].includes(key), `${key} is not a ${assetClass} field`);
   }
 
@@ -532,6 +542,24 @@ test('asset skills let agents fill any field and ask for a reasoning on every wr
   // SK-998: an optional reasoning on create_asset and update_asset.
   assert.match(assets, /\| `reasoning` \| optional free text, one per call/);
   assert.match(sync, /Send `reasoning` with every `create_asset` and `update_asset`/);
+});
+
+test('asset skills teach data stores and compute, and granularity per framework as guidance (SK-1001)', () => {
+  const sync = readFileSync(resolve(skillsRoot, 'sync-asset-inventory/SKILL.md'), 'utf8');
+  const assets = readFileSync(resolve(skillsRoot, 'manage-assets/SKILL.md'), 'utf8');
+
+  // A whole account is cloud; one bucket or database is data_store; one server or function is compute.
+  const picking = assets.match(/\nPicking a system class:([\s\S]*?)\n\n/);
+  assert.ok(picking, 'manage-assets must keep the system-class guide');
+  for (const assetClass of ['cloud', 'data_store', 'compute']) assert.ok(picking[1].includes(`\`${assetClass}\``), `the guide must place ${assetClass}`);
+
+  const granularity = sync.match(/\n## How fine to go\n([\s\S]*?)(?=\n## )/);
+  assert.ok(granularity, 'sync-asset-inventory must say how fine to register resources');
+  assert.match(granularity[1], /ISO 27001/);
+  assert.match(granularity[1], /SOC 2/);
+  for (const assetClass of ['data_store', 'compute']) assert.ok(granularity[1].includes(`\`${assetClass}\``));
+  assert.match(granularity[1], /`environment`/);
+  assert.doesNotMatch(granularity[1], /\b(must|always|never)\b/i, 'granularity is guidance, not a rule');
 });
 
 test('people in tool output are labels, never addresses (SK-843)', () => {
