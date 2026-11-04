@@ -427,7 +427,6 @@ test('manage-assets teaches every asset type, class, field and reference Sekit v
   assert.match(skill, /details\.<key>/, 'manage-assets must say an unknown details key is refused');
   assert.doesNotMatch(skill, /one inventory, three types/i);
   assert.doesNotMatch(skill, /data_processed|contract_ref|"hosting"/, 'free-form details are refused now');
-  assert.doesNotMatch(skill, /default owner/i, 'not shipped in SK-935');
   assert.doesNotMatch(skill, /external_ref|matched: true/, 'sync-asset-inventory owns the sync contract');
   assert.match(skill, /\*\*sync-asset-inventory\*\*/, 'manage-assets must route a sync to sync-asset-inventory');
 });
@@ -560,6 +559,35 @@ test('asset skills teach data stores and compute, and granularity per framework 
   for (const assetClass of ['data_store', 'compute']) assert.ok(granularity[1].includes(`\`${assetClass}\``));
   assert.match(granularity[1], /`environment`/);
   assert.doesNotMatch(granularity[1], /\b(must|always|never)\b/i, 'granularity is guidance, not a rule');
+});
+
+test('manage-assets fills gaps in confirmed batches with apply_asset_changes (SK-992)', () => {
+  const assets = readFileSync(resolve(skillsRoot, 'manage-assets/SKILL.md'), 'utf8');
+  const section = assets.match(/\n## Filling gaps in batches\n([\s\S]*?)(?=\n## )/);
+  assert.ok(section, 'manage-assets must teach batch gap filling');
+  const batch = section[1];
+  // Gaps are exactly missing_fields, counted with summary and read per field.
+  for (const term of ['`missing_fields`', 'summary: true', 'missing_field:', '`unproposed`', 'one question']) {
+    assert.ok(batch.includes(term), `Filling gaps in batches must teach ${term}`);
+  }
+  // The shipped contract: the cap, one entry per asset and field, never unknown, details merged.
+  assert.match(batch, /At most 50 asset fields per call/);
+  assert.match(batch, /Each asset and field appears once/);
+  assert.match(batch, /Never send `unknown`/);
+  assert.match(batch, /`details` fields are merged/);
+  for (const layout of ['by_value', 'rows', 'cards']) assert.ok(batch.includes(`\`${layout}\``));
+  for (const result of ['applied', 'unchanged', 'failed', 'excluded', 'unknown', 'not_attempted']) {
+    assert.ok(batch.includes(`\`${result}\``), `Filling gaps in batches must explain the ${result} outcome`);
+  }
+  // Over MCP there is no approval card: the whole call applies, so the consultant says yes first.
+  assert.match(batch, /there is no card: the whole call applies/);
+  assert.match(batch, /Never guess an owner/);
+  // Default owners shipped in SK-937, set per type in the console; no consultant tool reads them.
+  assert.match(batch, /No tool reads them/);
+  assert.match(batch, /Criticality, only when asked/);
+
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+  assert.match(guide, /\| \*\*Assets \/ inventory\*\*[^\n]*`apply_asset_changes`/);
 });
 
 test('people in tool output are labels, never addresses (SK-843)', () => {

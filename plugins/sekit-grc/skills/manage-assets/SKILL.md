@@ -1,6 +1,6 @@
 ---
 name: manage-assets
-description: "Register and maintain a Sekit client's asset inventory over the consultant MCP: people, third parties, information (data categories), systems, and devices, each with a criticality and an owner. Create, update, and archive assets with the right class, per-class details, and references (a system's supplier, a device's assignee, where data lives). Link an asset to the risks, gap analyses, or control evaluations it concerns as owner, affected, processor, or custodian. Bridge a person asset to a client contact, share an open Solicitud with them for portal access, and list or revoke their portal links. Use whenever the user wants to add or edit a client's people, vendors, data categories, systems, laptops, or phones, set an owner or criticality, learn where an ISMS fact comes from, record who holds a device or where data is stored, connect assets to the work that concerns them, or give a client person portal access. Framework-agnostic. Read the sekit-mcp-guide skill first."
+description: "Register and maintain a Sekit client's asset inventory over the consultant MCP: people, third parties, information (data categories), systems, and devices, each with a criticality and an owner. Create, update, and archive assets with the right class, per-class details, and references (a system's supplier, a device's assignee, where data lives). Find what the inventory is missing and fill the gaps in confirmed batches. Link assets to the risks, gap analyses, or control evaluations they concern. Bridge a person asset to a client contact, share an open Solicitud with them for portal access, and list or revoke their portal links. Use whenever the user wants to add or edit a client's people, vendors, data categories, systems, laptops, or phones, set owners or criticality, complete or review an incomplete inventory, record who holds a device or where data is stored, connect assets to the work that concerns them, or give a client person portal access. Framework-agnostic. Read the sekit-mcp-guide skill first."
 ---
 
 # Manage assets
@@ -20,8 +20,9 @@ control) explicit. A person decides: in a conversation they confirm before you w
 agent user's writes wait for their review. Ground every value in a basis you can name (your
 instructions, the wiki, declared facts, uploaded files, a source you read, or your own assessment
 stated as one) and give that basis in `reasoning`. Don't invent assets or answers.
-To keep the inventory in step with AWS, Vercel, or another technical source, use
-**sync-asset-inventory**.
+To fill what the inventory lacks (owners, classifications, and other fields) across many
+assets, see **Filling gaps in batches**. To keep the inventory in step with AWS, Vercel, or
+another technical source, use **sync-asset-inventory**.
 
 ## The model
 
@@ -133,8 +134,76 @@ examples.
 | Device fields | `details.ownership`, `details.os`, `details.disk_encrypted` | Who owns a device, its operating system, whether its disk is encrypted. | A device-management tool's inventory (for example Intune, Jamf), the IT asset list, or the person who holds the device. |
 
 A `details.` field goes inside `details`, only on the type and class the **Asset registry** lists
-for it; on update, resend the stored `details` with your change. When nothing gives an answer,
-record `unknown` on a yes/no field or leave the field out, and say in `reasoning` what is missing.
+for it; with `update_asset`, resend the stored `details` with your change (`apply_asset_changes`
+merges instead). When nothing gives an answer, record `unknown` on a yes/no field or leave the
+field out, and say in `reasoning` what is missing. In a batch, such an asset goes in
+`unproposed` instead.
+
+## Filling gaps in batches
+
+An inventory with 60 assets can lack an owner on 40 of them and a classification on 25. Asking
+about each asset in turn wears the consultant out, and most answers follow from a few facts
+(who owns the systems, what the HR data is). So work by **field, across assets**: find the
+biggest group, propose a value for every asset you have a basis for, ask one question about
+the rest, and write the whole group in one `apply_asset_changes` call.
+
+**What a gap is.** Exactly what `missing_fields` lists on a `list_assets` row or a `get_asset`
+result: `owner` (every type but `person`), `assignee` (devices), and each field of the asset's
+template that is empty or `unknown`. Criticality is never a gap: it is set on every asset and
+is reviewed only when the consultant asks (below).
+
+1. **Count.** `list_assets(client_organization_id, summary: true)` returns `{total, incomplete,
+   by_field}`, the number of assets lacking each field, largest first (add `perimeter_id` to
+   scope it). Take counts from here, not from a long list, which is truncated. Report them and
+   offer to start with the largest group.
+2. **Read one group.** `list_assets(client_organization_id, missing_field: "<field>")` returns
+   only the assets lacking that field, with their names, classes, details, and references.
+3. **Infer from evidence.** For each asset, look for a basis: its name, class, supplier, and
+   the data locations that point at it; the wiki; the client's documents (RoPA, policies,
+   contracts); facts the consultant already gave; and **Facts a source does not hold** above.
+   An owner comes from a person the evidence names or from the type's **default owner**. The
+   consultant sets default owners per asset type in the Sekit console. No tool reads them, so
+   ask once for the whole group, or use the ones the wiki records. Never guess an owner: one
+   wrong name puts accountability on the wrong person.
+4. **Propose.** Show the consultant the batch before you write it: each value, the assets that
+   take it (by name), and the source. Put the assets with no basis in a separate list and ask
+   **one question** that covers all of them ("What do «Varios» and «Export 2023» contain?").
+   When they answer, propose the batch again with those assets added. A Sekit chat shows its
+   own approval card. Over this connector **there is no card: the whole call applies when you
+   make it**, so you need a clear yes on the proposal first. If the consultant drops some
+   changes, leave them out of the call.
+5. **Apply** with `apply_asset_changes`, then report the outcomes and the next group.
+
+`apply_asset_changes(client_organization_id, layout, changes, unproposed?)`:
+
+| Param | Notes |
+|---|---|
+| `changes` | `[{field, value, asset_ids, reason}]`: one value, every asset that takes it, and its source. `field` is the bare key as `missing_fields` names it (`classification`, not `details.classification`), or `criticality`. `value` is a key (`confidential`, `yes`), or a person asset id (a number) for `owner` and `assignee`. |
+| `reason` | Where the value comes from: a wiki page, a document, the asset's name or location, the consultant's answer, the type's default owner. Name assets and people by name, never by id, in the consultant's language. An agent user's write keeps it per asset, for the person who reviews it under Agent updates. |
+| `unproposed` | Optional `[{field, asset_ids, note}]`: the assets you have no basis for, with the question you asked. Nothing is written for them. |
+| `layout` | `by_value` (one field, values repeat: a large batch), `rows` (one row per asset: a small batch or values that differ), `cards` (one card per asset with all its fields: a few assets that each lack several fields). `by_value` takes one field only. |
+
+- **At most 50 asset fields per call**, counting each asset in each change. Propose the rest
+  after this batch is applied.
+- **Each asset and field appears once** across `changes` and `unproposed`.
+- **Never send `unknown`**: it leaves the gap open (on a yes/no field it is refused). An
+  asset you cannot answer for goes in `unproposed`.
+- **`details` fields are merged**: the asset's other details stay. This differs from
+  `update_asset`, where sent `details` replace the stored object.
+- Use this tool for one asset too. `update_asset` is for other edits (name, description,
+  type, references other than owner and assignee); don't loop it over many assets.
+
+**Outcomes.** One per asset and field: `applied`; `unchanged` (it already held that value);
+`failed` with the error (the other assets still apply); `excluded` (removed on the chat card,
+so leave it out of later batches); `unknown` (the batch stopped while writing that asset: read
+it with `get_asset` before proposing it again); `not_attempted` (the batch stopped before it:
+propose it again). Report failures in plain words, then take a fresh `summary: true` for the
+next group.
+
+**Criticality, only when asked.** Ask once, for the whole group, three questions: what happens
+to the business if these assets are **unavailable**, if their data is **wrong**, and if it
+**leaks**. Propose the worst of the three answers as the level, in a `rows` batch with
+`field: "criticality"`, each reason naming the answer it rests on.
 
 ## Process
 
@@ -146,7 +215,7 @@ record `unknown` on a yes/no field or leave the field out, and say in `reasoning
 ### 2. Gather context (don't invent)
 
 - **`list_assets(client_organization_id)`**: the existing inventory, each row with `asset_type`,
-  `asset_class`, `details`, and its references. Read it to avoid duplicates, to refresh rather
+  `asset_class`, `details`, its references, and `missing_fields` (its gaps). Read it to avoid duplicates, to refresh rather
   than re-create, and to find the ids of owners, suppliers, assignees, and locations.
   `get_asset(...)` fetches one row.
 - **Knowledge base**: `wiki_search` / `wiki_read` for who/what is already known (people, vendor
@@ -165,7 +234,7 @@ Pick the row in the **Asset registry** and fill only its fields. `create_asset` 
 | `asset_class` | systems and devices; see the registry |
 | `details` | the registry's fields for that type and class, nothing else |
 | `supplier_asset_id` / `assignee_asset_id` / `location_asset_ids` | see **References** |
-| `owner_asset_id` | the person asset that owns this one |
+| `owner_asset_id` | the person asset that owns this one; omit it to give the asset its type's default owner (set per client in the Sekit console; persons have none), `null` for no owner |
 | `description` | free text |
 | `email`, `role` | for person assets (`email` valid or blank; `role` is the job / functional role, e.g. "CISO", distinct from an asset-link role) |
 | `reasoning` | optional free text, one per call: the basis for the values you send (the source, a wiki page, an instruction, your own assessment). The person who reviews an agent user's write reads it beside the change. `update_asset` takes it too. |
@@ -182,7 +251,9 @@ Two common shapes:
 ### 4. Create (or update)
 
 - **New:** `create_asset(...)`. Returns the created asset; note its `id`.
-- **Existing:** `update_asset(client_organization_id, asset_id, ...)`. PATCH:
+- **Existing:** `update_asset(client_organization_id, asset_id, ...)`. PATCH. To fill gaps
+  (owner, assignee, template fields) or set criticality, use `apply_asset_changes` instead,
+  for one asset or many (**Filling gaps in batches**):
   - An omitted param is left untouched; an explicit `null` **clears** `description`, `email`,
     `role`, `owner_asset_id`, `details`, `supplier_asset_id`, or `assignee_asset_id`.
     `asset_type`, `name`, and `criticality` can be set but never nulled.
@@ -326,4 +397,7 @@ or tell the consultant it was emailed when `emailed` is true.
   the same client (closed or unknown is `not_found`); a Solicitud takes at most 20 recipients, so
   a new recipient past that is a clean validation error. `revoke_portal_token` is
   **owner-only**; `archive_contact` and `restore_contact` are open to any member.
+- `apply_asset_changes` writes at most 50 asset fields per call, each asset and field once
+  across `changes` and `unproposed`; `field` is a bare key, `value` a key or (owner, assignee) a
+  person asset id, never `unknown`; `by_value` takes one field.
 - Archive (not delete) to remove: nothing is hard-deleted; `restore_*` brings it back.
