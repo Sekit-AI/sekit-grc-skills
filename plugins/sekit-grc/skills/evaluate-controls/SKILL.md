@@ -54,7 +54,7 @@ crosswalk).
 |---|---|
 | `client_organization_id` | from `list_clients` |
 | `status` | `pass` \| `partial` \| `gap` \| `unknown` \| `not_applicable` |
-| `evidence_source` | `document` \| `session` \| `intake` \| `inference` (NOT-NULL — always required) |
+| `evidence_source` | `document` \| `session` \| `intake` \| `inference` \| `company_control` (NOT-NULL — always required). `company_control` is written by `confirm_projected_controls`; don't send it on create. |
 | `evaluated_at` | ISO-8601 (a row copied from a base analysis keeps the base's date) |
 | one XOR leg | see above (+ `framework` for the RCF leg) |
 

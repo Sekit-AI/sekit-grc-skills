@@ -656,6 +656,15 @@ test('no skill teaches a field Sekit dropped, and the guide lists company access
   assert.match(guide, /\| \*\*Company access\*\*[^\n]*`list_company_access`/);
 });
 
+test('the guide teaches the SK-1054 projection tools and company_control is never sent on create', () => {
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+  for (const name of ['preview_projected_controls', 'confirm_projected_controls']) {
+    assert.match(guide, new RegExp(`\\| \\*\\*Gap analyses\\*\\*[^\\n]*\`${name}\``), `Gap analyses row must name ${name}`);
+  }
+  const evaluate = readFileSync(resolve(skillsRoot, 'evaluate-controls/SKILL.md'), 'utf8');
+  assert.match(evaluate, /`company_control` is written by `confirm_projected_controls`; don't send it on create/);
+});
+
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
   assert.ok(existsSync(artifact), 'npm test must build dist/sekit-grc.plugin first');
   assert.doesNotThrow(() => execFileSync('unzip', ['-tq', artifact], { stdio: 'pipe' }));
