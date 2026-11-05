@@ -333,6 +333,32 @@ test('every control-evaluation write names its gap analysis (SK-873)', () => {
   assert.doesNotMatch(controls, /perimeter_id/);
 });
 
+test('a new gap analysis can start from a previous one, and updates restamp the date (SK-1053)', () => {
+  const run = readFileSync(resolve(skillsRoot, 'run-gap-analysis/SKILL.md'), 'utf8');
+  const base = run.match(/\n\*\*Starting from a previous analysis\.\*\*([\s\S]*?)(?=\n### )/);
+  assert.ok(base, 'run-gap-analysis must keep the base section in step 2');
+  assert.match(base[1], /`base_gap_analysis_id` on `create_gap_analysis`/);
+  assert.match(base[1], /\*\*same company\*\*/);
+  assert.match(base[1], /\*\*same framework\*\*/);
+  assert.match(base[1], /\*\*same perimeter\*\*/);
+  assert.match(base[1], /\*\*same `evaluation_mode`\*\*/);
+  assert.match(base[1], /except `unknown` and rejected ones/);
+  assert.match(base[1], /original\s+`evaluated_at`/);
+  assert.match(base[1], /linked, not duplicated/);
+  assert.match(base[1], /The base is never changed/);
+  assert.match(base[1], /`base_reason`/);
+
+  const controls = readFileSync(resolve(skillsRoot, 'evaluate-controls/SKILL.md'), 'utf8');
+  const update = controls.match(/\n6\. \*\*Update\*\*([\s\S]*?)(?=\n7\. )/);
+  assert.ok(update, 'evaluate-controls must keep the Update step');
+  assert.match(update[1], /restamps\s+`evaluated_at` to today/);
+  assert.match(update[1], /explicit `evaluated_at` wins/);
+  assert.match(update[1], /Evidence-only and approval\s+changes keep the date/);
+
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+  assert.match(guide, /`create_gap_analysis` \(optional `base_gap_analysis_id`/);
+});
+
 test('manage-assets teaches every asset type, class, field and reference Sekit validates (SK-939)', () => {
   // Mirrors the asset templates the Sekit server's asset service validates (SK-935, SK-1001).
   const device = ['ownership', 'os', 'disk_encrypted'];
