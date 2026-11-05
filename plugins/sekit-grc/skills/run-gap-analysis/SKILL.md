@@ -1,6 +1,6 @@
 ---
 name: run-gap-analysis
-description: "Run a full Sekit gap analysis end to end over the consultant MCP. Create the framework-scoped analysis container (the framework lens and the evaluation mode are both immutable), build the worklist of controls, triage each one into a control evaluation, track progress with proportional scope, and mark it complete. Covers both modes: compliance, which records the five assessment verdicts with severity and remediation, and readiness, a certification-preparation walk that records how far along the work is in three work states. Use when the user wants to start or run a gap analysis, assess a client against ISO 27001, NIST CSF, Sekit CSF, or any framework, prepare a client for certification, or work a control worklist. Framework-agnostic. Read the sekit-mcp-guide skill first."
+description: "Run a full Sekit gap analysis end to end over the consultant MCP. Create the framework-scoped analysis container (the framework lens and the evaluation mode are both immutable), build the worklist of controls, triage each one into a control evaluation, track progress with proportional scope, and mark it complete. A new cycle can start from the previous analysis so last cycle's verdicts carry over. Covers both modes: compliance, which records the five assessment verdicts with severity and remediation, and readiness, a certification-preparation walk that records how far along the work is in three work states. Use when the user wants to start or run a gap analysis, assess a client against ISO 27001, NIST CSF, Sekit CSF, or any framework, prepare a client for certification, start this year's analysis from last year's, or work a control worklist. Framework-agnostic. Read the sekit-mcp-guide skill first."
 ---
 
 # Run a gap analysis
@@ -82,7 +82,36 @@ creating anything — the mode cannot be changed afterwards, so a wrong choice h
 the whole analysis.
 
 (If one already exists, `list_gap_analyses(client_organization_id)` / `get_gap_analysis` to reuse
-it instead of creating a duplicate.)
+it instead of creating a duplicate. When the existing one is last cycle's, start the new cycle
+from it as below.)
+
+**Starting from a previous analysis.** When the consultant starts a new cycle (this year's
+review after last year's) on the same framework, perimeter and mode, offer to start from the
+previous analysis so they do not redo verdicts that still hold. Pass its id as
+`base_gap_analysis_id` on `create_gap_analysis`. The base must be a kept (not archived)
+analysis of the **same company**, with the **same framework** (`framework_id` or
+`custom_framework_id`), the **same perimeter** (both whole company, or the same
+`perimeter_id`) and the **same `evaluation_mode`**. Anything else is a 422 on
+`base_gap_analysis_id`. In one transaction Sekit copies into the new analysis:
+
+- Every kept evaluation of the base **except `unknown` and rejected ones**. Each copy keeps its
+  verdict, severity, notes, summary, remediation, effort, owner type, confidence and approval
+  (approved stays approved, pending stays pending). It also keeps the **original
+  `evaluated_at`**, so a copied verdict still shows when it was last assessed.
+- Evidence is linked, not duplicated. Each kept evidence link that still backs its control
+  becomes a new evidence row on the copy pointing at the same file, with you (the caller) as
+  collector. Archived evidence, evidence on an archived client file and links the upload
+  grader marked as not backing the control are left behind.
+- Rows the new analysis cannot hold (a hierarchy header, a removed custom-framework member)
+  are skipped.
+
+The base is never changed. `unknown` rows are not copied, so the controls they covered stay
+open for a later Sekura gap run or for you to triage. The response carries
+`base_gap_analysis_id` and `base_reason` (the base's name), and each copied evaluation carries
+`source_control_evaluation_id` and `source_gap_analysis_reason`. Tell the consultant how many
+evaluations came over, then work the cycle as a re-verification: confirm or change each copied
+verdict (see **evaluate-controls** for how an update restamps `evaluated_at`) and triage the
+controls that were not copied.
 
 ### 3. Build the worklist
 
