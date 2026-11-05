@@ -55,7 +55,7 @@ crosswalk).
 | `client_organization_id` | from `list_clients` |
 | `status` | `pass` \| `partial` \| `gap` \| `unknown` \| `not_applicable` |
 | `evidence_source` | `document` \| `session` \| `intake` \| `inference` \| `company_control` (NOT-NULL — always required). `company_control` is written by `confirm_projected_controls`; don't send it on create. |
-| `evaluated_at` | ISO-8601 |
+| `evaluated_at` | ISO-8601 (a row copied from a base analysis keeps the base's date) |
 | one XOR leg | see above (+ `framework` for the RCF leg) |
 
 **`severity` is conditional**: **required when `status = "gap"`** (`critical`/`high`/`medium`/
@@ -164,6 +164,10 @@ field on a different resource.
    field-level message and fix (usually a severity-vs-status mismatch, an XOR violation, or a
    missing `gap_analysis_id`).
 6. **Update** with `update_control_evaluation(client_organization_id, <id>, ...)` (PATCH).
+   A change to `status`, `severity` or `notes` without an explicit `evaluated_at` restamps
+   `evaluated_at` to today. An explicit `evaluated_at` wins. Evidence-only and approval
+   changes keep the date. So re-verifying a verdict copied from a base analysis by changing
+   it dates it to this cycle. A copied verdict you leave untouched keeps last cycle's date.
 7. **Evidence** — `create_evidence(evidenceable_type="ControlEvaluation", evidenceable_id=<id>,
    ...)`. See **manage-evidence-and-deliverables**.
 8. **Batch** — for a bulk re-key from an external assessment, `import_control_evaluations`
