@@ -91,10 +91,11 @@ the connector.
 | **Self / firm** | `whoami`, `get_organization`, `list_team_members`, `list_pending_invitations` |
 | **Clients** | `list_clients`, `get_client`, `create_client` (onboard a new client — only `name` is required), `update_client` |
 | **Company access** (read-only, company administrators only) | `list_company_access` — everyone who reaches a company: people and agents with a direct grant, and the members of organizations with access, each with role (`company_admin`\|`member`) and source (`direct`\|`organization`) |
-| **Risks** | `list_risks`, `get_risk`, `create_risk`, `update_risk`, `approve_risk`, `unapprove_risk`, `archive_risk`, `restore_risk`; version history `list_risk_versions`, `get_risk_version`; per-action remediation tracking `list_risk_actions`, `create_risk_action`, `update_risk_action`, `delete_risk_action` → see **analyze-risks** |
+| **Risks** | `list_risks`, `get_risk`, `create_risk`, `update_risk`, `approve_risk`, `unapprove_risk`, `archive_risk`, `restore_risk`; version history `list_risk_versions`, `get_risk_version`; per-action remediation tracking `list_risk_actions`, `create_risk_action`, `update_risk_action`, `delete_risk_action`; treatment links to the company's own controls `link_risk_company_control`, `unlink_risk_company_control` (write). `get_risk` / `list_risks` carry `treatment_controls` (the kept company controls treating the risk, each with its live `implementation_status`) and `residual_warning` (residual below inherent with no treatment control implemented: an alert, never a block) → see **analyze-risks** |
+| **Company controls** | `list_company_controls`, `get_company_control` (carries `treated_risks`: the kept risks this control treats) |
 | **Control evaluations** | `list_control_evaluations` (pass `inbox=pending`\|`resolved` for the Bandeja agent-proposal triage lens), `get_control_evaluation`, `get_control_evaluation_activity`, version history `list_control_evaluation_versions`, `get_control_evaluation_version`, `create_control_evaluation`, `update_control_evaluation`, `import_control_evaluations`, `approve_control_evaluation`, `reject_control_evaluation`, `unapprove_control_evaluation`, `revert_control_evaluation_rejection`, `archive_control_evaluation`, `restore_control_evaluation` → see **evaluate-controls** |
 | **Gap analyses** | `list_gap_analyses`, `get_gap_analysis`, `create_gap_analysis` (optional `base_gap_analysis_id` starts a new cycle from a previous analysis), `update_gap_analysis`, `archive_gap_analysis`, `restore_gap_analysis`; latest agent run `get_gap_analysis_run`; projections `preview_projected_controls` (read), `confirm_projected_controls` (write). Read the preview with the consultant, then send its rows unchanged to `confirm_projected_controls`; change a severity only when asked. A confirmed projection counts toward progress; an unconfirmed one does not. → see **run-gap-analysis** |
-| **Reference data** (read-only) | `list_frameworks`, `list_controls`, `search_controls`, `search_control_catalog`, `get_control`, `list_framework_controls`, `list_industries`; crosswalk relation + rationale `get_control_mappings`, `get_reverse_control_mappings` (no `client_organization_id`) → see **The crosswalk** below |
+| **Reference data** (read-only) | `list_frameworks`, `list_controls`, `search_controls`, `search_control_catalog` (per client: first the company's kept controls, `kind: "company_control"`, to link as a risk's treatment; then catalog hits, `kind: "catalog_control"`, for a risk's `control_links`), `get_control`, `list_framework_controls`, `list_industries`; crosswalk relation + rationale `get_control_mappings`, `get_reverse_control_mappings` (no `client_organization_id`) → see **The crosswalk** below |
 | **Custom library** (org-authored frameworks + controls) | `list_custom_frameworks`, `get_custom_framework`, `create_custom_framework`, `update_custom_framework`, `archive_custom_framework`, `restore_custom_framework`, `list_custom_controls`, `get_custom_control`, `create_custom_control`, `update_custom_control`, `archive_custom_control`, `restore_custom_control`, `add_framework_member`, `update_framework_member`, `remove_framework_member` |
 | **Evidence** | `list_evidence`, `get_evidence`, `create_evidence`, `update_evidence`, `archive_evidence`, `restore_evidence` → see **manage-evidence-and-deliverables** |
 | **Solicitudes (collection sessions)** | `list_collection_sessions`, `get_collection_session`, `get_collection_session_board`, `get_collection_session_ask`, `list_collection_session_conversations`, `get_collection_preview`, `get_portal_conversation` (all read-only); `mint_portal_token` (shares a Solicitud with a contact; client-facing) → see **Solicitudes** below and **manage-assets** |
@@ -303,8 +304,14 @@ Agent updates are the changes **agents** made that still wait for the consultant
 
 `list_agent_updates(client_organization_id)` returns the pending ones (`review_status`
 `pending_review` by default, or `all` / `reverted`): the subject changed (`ControlEvaluation`
-| `Risk` | `Evidence` | `CompanyControl` | `Asset`), the trigger and `agent_slug` that made
-it, and the agent's reasoning when it gave one. `confirmed_by` (who asked or confirmed) is
+| `Risk` | `Evidence` | `CompanyControl` | `Asset` | `RiskCompanyControl`), the trigger and `agent_slug` that made
+it, and the agent's reasoning when it gave one. A `RiskCompanyControl` row is an agent's
+treatment link or unlink (`link_risk_company_control` / `unlink_risk_company_control`): its
+`code` and `title` are the risk's, and `treatment_link` carries `action` (`link` \| `unlink`),
+`risk_id`, `company_control_id` and `company_control_name`. The console row reads
+«Vinculó …» / «Desvinculó …» with the control's name. The link or unlink is already applied;
+«Marcar como revisado» keeps it, and «Descartar» undoes it in the console (deletes the link, or
+restores the one the agent removed). No MCP tool discards it. `confirmed_by` (who asked or confirmed) is
 `{email, name, role}`: `name` is the person's label; `email` is `null` when that person is
 outside your organization, and so is `decision.email`. Name people by `name`.
 

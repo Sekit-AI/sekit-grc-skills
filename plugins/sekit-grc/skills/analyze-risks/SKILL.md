@@ -1,6 +1,6 @@
 ---
 name: analyze-risks
-description: "Build, update, or triage a Sekit client's risk register over the consultant MCP. Identify risks, set likelihood and impact (severity is computed from them), pick treatment and owner when decided, write a two-layer technical-plus-business description, link evidence, and create or update each risk. Track each remediation action's status, owner, phase and target date with the per-action tools. Use whenever the user wants to add risks for a Sekit client, review or update a client's risk register, mark remediation progress, list or move remediation actions, approve a risk, or asks what the risks or open actions are for a client. Framework-agnostic. Read the sekit-mcp-guide skill first."
+description: "Build, update, or triage a Sekit client's risk register over the consultant MCP. Identify risks, set likelihood and impact (severity is computed from them), pick treatment and owner when decided, write a two-layer technical-plus-business description, link evidence, link the company's own controls as treatment, and create or update each risk. Track each remediation action's status, owner, phase and target date with the per-action tools. Use whenever the user wants to add risks for a Sekit client, review or update a client's risk register, mark remediation progress, list or move remediation actions, approve a risk, or asks what the risks or open actions are for a client. Framework-agnostic. Read the sekit-mcp-guide skill first."
 ---
 
 # Analyze risks
@@ -28,7 +28,7 @@ each one in evidence (the client wiki, control evaluations, declared facts).
 - **`list_risks(client_organization_id)`** — the existing register. Read it to refresh rather
   than re-create (and to avoid duplicating an `external_id` if you pass your own).
 - **`list_risk_actions(client_organization_id)`** — the client-wide remediation plan: every
-  action across the kept risks with its status, owner, phase and target date (step 5). Read it
+  action across the kept risks with its status, owner, phase and target date (step 6). Read it
   for "what is still open / who owns what / what is due" instead of walking `list_risks` risk
   by risk.
 - **Knowledge base** — `wiki_search` / `wiki_read` for what's already known about this client
@@ -83,7 +83,9 @@ Useful **optional** fields:
   pair (the register's "inherent → residual" story). Set them ONLY when the consultant
   states or approves the estimate — never derive or invent the numbers yourself; when in
   doubt, leave them unset and ask. The residual score is computed server-side — don't
-  send it. An explicit `null` clears an estimate.
+  send it. An explicit `null` clears an estimate. Reads carry `residual_warning`: true when
+  the residual score is below the inherent one and no treatment control (step 5) is
+  implemented. It is an alert, never a block: tell the consultant, don't change the numbers.
 - `acceptance_rationale` — WHY a `treatment: "accept"` risk is accepted (owner, conditions,
   review horizon). Printed verbatim in the risk report's acceptance register, so write it
   for the client's management. Only meaningful with `treatment: "accept"`.
@@ -96,14 +98,16 @@ Useful **optional** fields:
   stored as its own tracked action row (SK-466): the row's `status`, `owner_asset_id`,
   `phase` and `target_date` are NOT writable here — this array is content-only and strict,
   so a tracking key inside an item is a 422 at every door. Track the work with the
-  per-action tools in step 5. There is still no `timeline` field (retired in SK-348 fase
+  per-action tools in step 6. There is still no `timeline` field (retired in SK-348 fase
   B): an action's schedule is its `phase` + `target_date` on the tracked row, written with
   `update_risk_action`.
 - `related_controls` (control codes/refs), `applicable_regulations`,
   `compensating_controls`, `consequence`. There is no `primary_framework` field and no
   `nist_function` field: a risk's framework and its categorisation both travel on its
   linked controls (`control_links`) — the server derives `derived_domains` from them —
-  never as standalone attributes.
+  never as standalone attributes. A treatment link is not a `control_links` entry: catalog
+  `control_links` name the requirements the risk relates to, while a treatment link names the
+  company's own control that treats it (step 5).
 - `report_visibility` — string list of audience tiers; the contract enum is
   `"executive"`, `"technical"`, `"audit"` (NOT `"client_facing"` — Sekit
   rejects an off-contract tier with a 422). On `create_risk`, omitting it gives `["technical"]`.
@@ -123,7 +127,7 @@ Write every `title` and `description` as a risk statement with three parts:
    departed employee's live account, a supplier outage, a regulator's inspection).
 2. **Condition** — why it is plausible here: the gaps, weaknesses or facts it rests on. This
    is where the gap belongs, as cause and evidence. Cite the control codes in
-   `related_controls`, and back the risk with the evidence the gap rests on (step 6): the same
+   `related_controls`, and back the risk with the evidence the gap rests on (step 7): the same
    client file or wiki page, or an `inference` evidence whose `body` cites the evaluation.
 3. **Impact** — the asset or business process hit, and the consequence (data lost, service
    down, fine, contract lost). The SME-facing version goes in `consequence`.
@@ -164,13 +168,40 @@ until it is rebuilt."*
   out is deleted, and the array order becomes the new order (an id from another risk, or the
   same id twice, is a 422). A wholly id-less array is matched by position instead — old-style
   saves keep working and surviving rows keep their tracking — so never reorder or remove
-  items without ids. To change ONE action, prefer `update_risk_action` (step 5); it touches
+  items without ids. To change ONE action, prefer `update_risk_action` (step 6); it touches
   nothing else.
 
 For a full register, **summarize the planned set and get a go-ahead** before firing many
 `create_risk` calls (see Safety in sekit-mcp-guide).
 
-### 5. Track remediation actions (per-action tools)
+### 5. Link treatment controls (the company's own controls)
+
+A risk is treated by the company's own controls (what the company does), linked one by one.
+Find the control with `search_control_catalog(client_organization_id, q)` (its
+`kind: "company_control"` hits, with `company_control_id`, `title`, `implementation_status`)
+or `list_company_controls(client_organization_id)`. `get_company_control` shows the other
+side: `treated_risks`, the kept risks a control already treats.
+
+- **`link_risk_company_control(client_organization_id, risk_id, company_control_id)`** — the
+  control must be a kept company control of the same company (another company's or an archived
+  control is `not_found`). Idempotent: linking again returns the first link with
+  `created: false`; it returns `{link, created}`. At most 50 per risk.
+- **`unlink_risk_company_control(client_organization_id, risk_id, company_control_id)`** —
+  removes the control from the risk's treatment; works for a link to an archived control.
+  Idempotent: it returns `{removed}`, `false` when the control was not linked.
+
+Whether a treatment is existing or planned is the control's own `implementation_status`
+(`implemented` = existing; `in_progress` or `not_implemented` = planned), so never send
+existing or planned: when the control becomes implemented, every risk it treats shows it.
+`get_risk` / `list_risks` return the links as `treatment_controls`, each with its live
+`implementation_status`.
+
+Propose the links and get the consultant's go-ahead before writing them. A person's link
+applies directly. An agent's link or unlink applies too and is listed for review in
+«Actualizaciones de agentes» (see **Agent updates** in sekit-mcp-guide): «Marcar como
+revisado» keeps it, «Descartar» undoes it.
+
+### 6. Track remediation actions (per-action tools)
 
 Every `recommended_actions` item is a tracked row. On `get_risk` / `list_risks` each item
 carries its `id`, the content (`action`, `effort`, `validates_when`) and the tracking state:
@@ -209,13 +240,13 @@ say so.
 `owner_asset_id`, `phase`, `target_date`). A risk whose actions are all `done` usually
 deserves a status/progress update of its own — propose it, don't apply it silently.
 
-### 6. Link evidence
+### 7. Link evidence
 
 For each risk, attach what backs it: `create_evidence(evidenceable_type="Risk",
 evidenceable_id=<risk id>, kind=..., ...)`. See **manage-evidence-and-deliverables** for the
 `kind → source` mapping.
 
-### 7. Governance (when asked)
+### 8. Governance (when asked)
 
 - `approve_risk` / `unapprove_risk` — any member of the team; only when the user explicitly approves.
 - `archive_risk` / `restore_risk` — soft-delete / undo. Any member, like the approvals.

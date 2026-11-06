@@ -530,7 +530,7 @@ test('sync-asset-inventory says agent writes await review in Sekit and never arc
   assert.match(skill, /consultant's own writes through this connector apply directly and are not reviewed/);
   assert.match(skill, /Never mark\s+your own writes reviewed/);
   assert.match(skill, /Never archive or restore an asset, not\s+even one that disappeared from the source/);
-  assert.match(guide, /`Evidence` \| `CompanyControl` \| `Asset`\)/);
+  assert.match(guide, /`Evidence` \| `CompanyControl` \| `Asset` \| `RiskCompanyControl`\)/);
 
   const report = skill.match(/\n### 6\. Report\n([\s\S]*)$/);
   assert.ok(report, 'sync-asset-inventory must keep the Report section');
@@ -663,6 +663,34 @@ test('the guide teaches the SK-1054 projection tools and company_control is neve
   }
   const evaluate = readFileSync(resolve(skillsRoot, 'evaluate-controls/SKILL.md'), 'utf8');
   assert.match(evaluate, /`company_control` is written by `confirm_projected_controls`; don't send it on create/);
+});
+
+test('skills teach SK-1073 treatment links apart from catalog control_links', () => {
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+  for (const name of ['link_risk_company_control', 'unlink_risk_company_control']) {
+    assert.match(guide, new RegExp(`\\| \\*\\*Risks\\*\\*[^\\n]*\`${name}\``), `Risks row must name ${name}`);
+  }
+  assert.match(guide, /\| \*\*Risks\*\*[^\n]*`treatment_controls`[^\n]*`residual_warning`/);
+  assert.match(guide, /\| \*\*Company controls\*\*[^\n]*`get_company_control`[^\n]*`treated_risks`/);
+  assert.match(guide, /\| \*\*Reference data\*\*[^\n]*`search_control_catalog`[^\n]*`kind: "company_control"`[^\n]*`kind: "catalog_control"`/);
+  assert.match(guide, /\| `CompanyControl` \| `Asset` \| `RiskCompanyControl`\)/);
+  assert.match(guide, /«Vinculó …» \/ «Desvinculó …»/);
+  assert.match(guide, /«Descartar» undoes it in the console/);
+
+  const risks = readFileSync(resolve(skillsRoot, 'analyze-risks/SKILL.md'), 'utf8');
+  for (const pattern of [
+    /`link_risk_company_control\(client_organization_id, risk_id, company_control_id\)`/,
+    /`unlink_risk_company_control\(client_organization_id, risk_id, company_control_id\)`/,
+    /returns `\{link, created\}`/,
+    /returns `\{removed\}`/,
+    /At most 50 per risk/,
+    /never send\s+existing or planned/,
+    /`residual_warning`: true when[\s\S]{0,200}It is an alert, never a block/,
+    /A treatment link is not a `control_links`\s+entry/,
+    /«Actualizaciones de agentes»/,
+  ]) {
+    assert.match(risks, pattern);
+  }
 });
 
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
