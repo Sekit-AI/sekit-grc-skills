@@ -37,6 +37,11 @@ each one in evidence (the client wiki, control evaluations, declared facts).
   `list_gap_analyses(...)` for the gaps a risk rests on. A gap is the **condition** that lets a
   harmful event happen, not the risk itself: read the gaps, then ask what could go wrong because
   of them (step 3, *Risk statement, not a gap*).
+- **`get_connections(client_organization_id, root)`** — for traceability questions ("what treats
+  this risk, and what evidence backs that?"), the stored links from a risk through its
+  treatment controls, framework controls and evaluations to evidence. It is read-only and may
+  be incomplete: check `complete`, and narrow with `types` when it is `false` (see the
+  Connections row in sekit-mcp-guide).
 
 Each risk you write should trace to something concrete — cite it.
 

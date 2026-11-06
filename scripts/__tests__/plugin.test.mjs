@@ -693,6 +693,27 @@ test('skills teach SK-1073 treatment links apart from catalog control_links', ()
   }
 });
 
+test('skills teach CN-1 get_connections as a budgeted read-only traceability read', () => {
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+  const row = guide.match(/\n\| \*\*Connections\*\* \(read-only\) \|[^\n]*/);
+  assert.ok(row, 'the catalog must have a read-only Connections row');
+  for (const pattern of [
+    /`get_connections\(client_organization_id, root, expand\?, types\?\)`/,
+    /`complete`, `total_nodes`, `returned_nodes`/,
+    /`complete` is `false`[^|]*narrow with `types`/,
+    /Every returned edge's endpoints are among the returned nodes/,
+    /«Persona · <rol>» with their id, never a name/,
+    /stored links only/,
+  ]) {
+    assert.match(row[0], pattern);
+  }
+  assert.doesNotMatch(row[0], /\b\d+ nodes\b/, 'the node budget is not a published number');
+
+  const risks = readFileSync(resolve(skillsRoot, 'analyze-risks/SKILL.md'), 'utf8');
+  assert.match(risks, /\*\*`get_connections\(client_organization_id, root\)`\*\*[^\n]*traceab/);
+  assert.match(risks, /read-only[\s\S]{0,300}`complete`/);
+});
+
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
   assert.ok(existsSync(artifact), 'npm test must build dist/sekit-grc.plugin first');
   assert.doesNotThrow(() => execFileSync('unzip', ['-tq', artifact], { stdio: 'pipe' }));
