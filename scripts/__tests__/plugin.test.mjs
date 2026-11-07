@@ -714,6 +714,37 @@ test('skills teach CN-1 get_connections as a budgeted read-only traceability rea
   assert.match(risks, /read-only[\s\S]{0,300}`complete`/);
 });
 
+test('skills teach the SK-1075 acceptance record behind a feature check and never overstate it', () => {
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+  for (const name of ['list_risk_approver_options', 'record_risk_acceptance', 'accept_risk']) {
+    assert.match(guide, new RegExp(`\\| \\*\\*Risks\\*\\*[^\\n]*\`${name}\``), `Risks row must name ${name}`);
+  }
+  assert.match(guide, /\| \*\*Risks\*\*[^\n]*when the connector lists its tools/);
+  assert.match(guide, /\| \*\*Risks\*\*[^\n]*Never call a pending or expired acceptance approved/);
+  assert.match(guide, /acceptance register carries each row's `acceptance_status`[\s\S]{0,300}never call a pending or expired acceptance approved/);
+
+  const risks = readFileSync(resolve(skillsRoot, 'analyze-risks/SKILL.md'), 'utf8');
+  for (const pattern of [
+    /The record exists only when\s+the connector lists `list_risk_approver_options`/,
+    /dropped silently \(see \*Unknown arguments are dropped silently\* in sekit-mcp-guide\)/,
+    /name ONE approver, never\s+both/,
+    /`accepted_by_asset_id` — a person asset of THIS client[\s\S]{0,120}one-year expiry/,
+    /`accepted_by_user_id`[\s\S]{0,160}stays PENDING until that person accepts it/,
+    /any other treatment is a 422, and moving a risk off `accept` clears the\s+whole record/,
+    /\*\*Only record an acceptance\s+the approver actually gave\*\*/,
+    /anyone else, and every\s+agent, gets a 403/,
+    /\| `complete` \|[^\n]*«Aceptado · caduca <fecha>»[^\n]*«Aceptado · sin caducidad»/,
+    /\| `pending` \|[^\n]*«Pendiente»/,
+    /\| `expired` \|[^\n]*«Caducada»/,
+    /\| `legacy` \|[^\n]*«Sin registrar»/,
+    /\*\*Never call a pending or expired acceptance approved, current or in force\.\*\*/,
+    /an accepted risk is done only when its `acceptance_status` is `complete`/,
+    /It does not record or complete an acceptance/,
+  ]) {
+    assert.match(risks, pattern);
+  }
+});
+
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {
   assert.ok(existsSync(artifact), 'npm test must build dist/sekit-grc.plugin first');
   assert.doesNotThrow(() => execFileSync('unzip', ['-tq', artifact], { stdio: 'pipe' }));

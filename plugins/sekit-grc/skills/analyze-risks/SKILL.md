@@ -1,6 +1,6 @@
 ---
 name: analyze-risks
-description: "Build, update, or triage a Sekit client's risk register over the consultant MCP. Identify risks, set likelihood and impact (severity is computed from them), pick treatment and owner when decided, write a two-layer technical-plus-business description, link evidence, link the company's own controls as treatment, and create or update each risk. Track each remediation action's status, owner, phase and target date with the per-action tools. Use whenever the user wants to add risks for a Sekit client, review or update a client's risk register, mark remediation progress, list or move remediation actions, approve a risk, or asks what the risks or open actions are for a client. Framework-agnostic. Read the sekit-mcp-guide skill first."
+description: "Build, update, or triage a Sekit client's risk register over the consultant MCP. Identify risks, set likelihood and impact (severity is computed from them), pick treatment and owner when decided, write a two-layer technical-plus-business description, link evidence, link the company's own controls as treatment, record who accepted an accepted risk and until when, and create or update each risk. Track each remediation action's status, owner, phase and target date with the per-action tools. Use whenever the user wants to add risks for a Sekit client, review or update a client's risk register, mark remediation progress, list or move remediation actions, approve a risk, record or renew a risk acceptance, or asks what the risks or open actions are for a client. Framework-agnostic. Read the sekit-mcp-guide skill first."
 ---
 
 # Analyze risks
@@ -94,7 +94,8 @@ Useful **optional** fields:
   implemented. It is an alert, never a block: tell the consultant, don't change the numbers.
 - `acceptance_rationale` — WHY a `treatment: "accept"` risk is accepted (owner, conditions,
   review horizon). Printed verbatim in the risk report's acceptance register, so write it
-  for the client's management. Only meaningful with `treatment: "accept"`.
+  for the client's management. Only meaningful with `treatment: "accept"`. The rest of the
+  acceptance record (who accepted it and until when) is in step 4, *The acceptance record*.
 - `recommended_actions` — the remediation plan as a list of CONTENT items
   `{action, effort, validates_when}` (plus the row `id` on update — see step 4). `effort`
   MUST be `low`/`medium`/`high` (SK-348 — the same shared vocabulary as `estimated_effort`;
@@ -180,6 +181,66 @@ until it is rebuilt."*
 For a full register, **summarize the planned set and get a go-ahead** before firing many
 `create_risk` calls (see Safety in sekit-mcp-guide).
 
+#### The acceptance record (`treatment: "accept"` only)
+
+An accepted risk records who accepted it, when, and until when. The record exists only when
+the connector lists `list_risk_approver_options`. Without that tool the server predates it:
+`acceptance_rationale` is the only acceptance field, and the approver and expiry keys below are
+dropped silently (see *Unknown arguments are dropped silently* in sekit-mcp-guide). Then tell
+the consultant the approver cannot be recorded yet, and never say an acceptance is approved.
+
+When the tool is listed:
+
+- **`list_risk_approver_options(client_organization_id)`** — who may approve: people with
+  access to the client (`kind: "user"`, persons only, never agents) and its kept person assets
+  (`kind: "asset"`). A person asset with a member's address is folded into that member
+  (`matched_asset_id`). The default approver is the risk owner when the owner is a kept person
+  asset (or the member it matches). Never invent an approver: if nobody fits, leave it unset
+  and say so.
+- **On `create_risk` / `update_risk`**, with `treatment: "accept"`, name ONE approver, never
+  both:
+  - `accepted_by_asset_id` — a person asset of THIS client. The acceptance is recorded today
+    with a one-year expiry.
+  - `accepted_by_user_id` — a person with access, from `list_risk_approver_options`. The
+    acceptance stays PENDING until that person accepts it in the console.
+
+  `acceptance_expires_at` (`YYYY-MM-DD`, after the accepted date; `null` = no expiry) and
+  `acceptance_rationale` complete it. The accepted date is never written here. Sending an
+  acceptance field with any other treatment is a 422, and moving a risk off `accept` clears the
+  whole record.
+- **`record_risk_acceptance(client_organization_id, risk_id, ...)`** — record an acceptance on
+  the approver's behalf, or renew an expired one. The treatment must already be `accept`. Name
+  the approver with `accepted_by_asset_id` or `accepted_by_user_id`, or omit both to keep the
+  one already named. `accepted_at` defaults to today in the client's timezone and
+  `acceptance_expires_at` to a year after it (`null` = no expiry). **Only record an acceptance
+  the approver actually gave**, and say who gave it and when before you write. You are the
+  recorder. An agent's record applies and is listed for review in «Actualizaciones de agentes».
+- **`accept_risk(client_organization_id, risk_id)`** — the named approver accepting it
+  themselves («Aceptar riesgo»). It works only when the signed-in person is the
+  `accepted_by_user_id` approver (`acceptance_awaits_viewer` is true); anyone else, and every
+  agent, gets a 403. Call it only when that person tells you they accept. Never call it to
+  record someone else's acceptance; use `record_risk_acceptance`.
+
+Reads carry the record: `accepted_by_name`, `accepted_by_kind` (`asset` \| `user`),
+`accepted_at`, `acceptance_expires_at`, `acceptance_recorded_by_user_id` and
+`acceptance_recorded_by_name`, `acceptance_expired`, `acceptance_awaits_viewer` (you are the
+approver it waits on), and `acceptance_status`, judged against today in the client's timezone.
+Describe an acceptance with the status's words and no stronger ones, because the client signs
+on that basis and an expired or unanswered acceptance is exposure they still carry:
+
+| `acceptance_status` | Meaning | Say (es) | Next step |
+|---|---|---|---|
+| `complete` | Approver named, accepted date set, not expired | «Aceptado · caduca <fecha>», or «Aceptado · sin caducidad» when `acceptance_expires_at` is `null` | None until the expiry |
+| `pending` | Approver named, not accepted yet | «Pendiente» (awaiting `accepted_by_name`) | The approver accepts it, or record the acceptance they gave |
+| `expired` | On or after `acceptance_expires_at` | «Caducada» | Renew with `record_risk_acceptance` or reconsider the treatment |
+| `legacy` | Accepted with no approver on record | «Sin registrar» | Name an approver |
+| `none` | Treatment is not `accept` | Nothing | None |
+
+**Never call a pending or expired acceptance approved, current or in force.** An approved
+risk (`approve_risk`, step 8) is not an accepted one. For a certification walk such as ISO
+27001 clause 6.1, an accepted risk is done only when its `acceptance_status` is `complete`. A
+mitigated risk is done when it names the company controls that treat it (step 5).
+
 ### 5. Link treatment controls (the company's own controls)
 
 A risk is treated by the company's own controls (what the company does), linked one by one.
@@ -255,6 +316,8 @@ evidenceable_id=<risk id>, kind=..., ...)`. See **manage-evidence-and-deliverabl
 ### 8. Governance (when asked)
 
 - `approve_risk` / `unapprove_risk` — any member of the team; only when the user explicitly approves.
+  Approval signs off the risk's content. It does not record or complete an acceptance: a
+  `pending` or `expired` acceptance stays one after approval (step 4, *The acceptance record*).
 - `archive_risk` / `restore_risk` — soft-delete / undo. Any member, like the approvals.
 - History: `list_risk_versions(client_organization_id, risk_id)` lists the risk's snapshots,
   newest first, with who wrote each (`actor_kind` `human`, `agent` or `service`; an
