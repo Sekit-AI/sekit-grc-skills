@@ -1,15 +1,16 @@
 ---
 name: generate-ropa
-description: "Draft and deliver a GDPR Art. 30 Record of Processing Activities (ROPA / RAT, 'registro de actividades de tratamiento') for a Sekit client over the consultant MCP. Gathers what Sekit already knows (wiki, assets, contacts, gap analysis), collects the documents it lacks through a Solicitud and the per-activity facts through the consultant's own intake, drafts one entry per processing activity with the Art. 30(1)/(2) fields, and ships it as a governed artifact (kind ropa) linked as evidence on the GDPR 30.1/30.2 controls. Use when the user asks for a ROPA, a RAT, a record/register of processing activities, Art. 30 compliance, or to close a GDPR gap on records of processing. Read the sekit-mcp-guide skill first."
+description: "Draft and deliver a GDPR Art. 30 Record of Processing Activities (ROPA / RAT, 'registro de actividades de tratamiento') for a Sekit client over the consultant MCP. Gathers what Sekit already knows (wiki, assets, contacts, gap analysis), collects the documents it lacks through a Solicitud and the per-activity facts through the consultant's own intake, drafts one entry per processing activity with the Art. 30(1)/(2) fields, and ships it as a governed document (kind record, subtype ropa) linked as evidence on the GDPR 30.1/30.2 controls. Use when the user asks for a ROPA, a RAT, a record/register of processing activities, Art. 30 compliance, or to close a GDPR gap on records of processing. Read the sekit-mcp-guide skill first."
 ---
 
 # Generate a ROPA (GDPR Art. 30)
 
 The ROPA is the written record of a client's processing activities — the backbone of GDPR
 accountability and the artifact a supervisory authority asks for first. Sekit models it as a
-governed deliverable: **artifact `kind="ropa"`**, linked as evidence on the GDPR framework's
+governed document in «Políticas y procedimientos»: **artifact `kind="record"` with
+`subtype="ropa"`** (or `RAT`), linked as evidence on the GDPR framework's
 **30.1** (controller record) / **30.2** (processor record) controls. Read **sekit-mcp-guide**
-first; the upload/approval mechanics live in **manage-evidence-and-deliverables**.
+first; the upload/approval mechanics live in **manage-evidence-and-documents**.
 
 Three phases: **GATHER → DRAFT → DELIVER**. Never fabricate an activity or a field — what the
 client hasn't confirmed goes in as an explicit `OPEN:` item, not a guess.
@@ -39,7 +40,7 @@ Start from what Sekit already knows, then ask the client only for what's missing
    evidence its evaluations still need (privacy policy, processor contracts, retention
    schedule…). No consultant MCP tool starts one; once open, `list_collection_sessions` finds
    it and `mint_portal_token` shares it with the privacy owner (CLIENT-FACING, see
-   manage-evidence-and-deliverables). What they upload is graded by Sekura and lands as client
+   manage-evidence-and-documents). What they upload is graded by Sekura and lands as client
    files and Agent updates. The consultant's own writes through this connector apply directly
    and are not Agent updates.
 2. **Per-activity facts → the consultant's intake.** Purpose; categories of people and of data
@@ -96,11 +97,15 @@ Drafting rules:
 ## 3. DELIVER
 
 1. Render the draft as a single markdown (or the client's preferred format) file.
-2. Upload via the two-step presigned flow (see manage-evidence-and-deliverables):
+2. Upload via the two-step presigned flow (see manage-evidence-and-documents):
    `prepare_artifact_upload` → PUT bytes → `create_artifact_from_upload` with
-   `kind="ropa"`, `title` like "Registro de Actividades de Tratamiento — <Cliente> — <YYYY-MM>",
+   `kind="record"`, `subtype="ropa"`,
+   `title` like "Registro de Actividades de Tratamiento — <Cliente> — <YYYY-MM>",
    `classification="confidential"` (**`handling` is then required**), `owner_name`, and the
-   client's `document_id_string` (**ask** if you don't have their scheme).
+   client's `document_id_string`, e.g. `RAT-001` (**ask** if you don't have their scheme).
+   If the client already sent their ROPA as a loose file in «Archivos», convert that file
+   instead of uploading again: `create_artifact_from_upload` with `client_file_id=<id>` in
+   place of `signed_id` (never both); the file moves into the new document.
 3. Link it where the gap lives: `create_evidence(kind="artifact", artifact_id=<id>,
    evidenceable_type="ControlEvaluation", evidenceable_id=<the gdpr 30.1 CE>)` — and on the
    30.2 CE too when a processor record exists. **Precondition:** the CE must already exist —
@@ -113,7 +118,8 @@ Drafting rules:
 4. Approval (`approve_artifact`) is a governance action: **only on explicit user instruction**;
    any member of the team may approve. It stamps `effective_date` and `next_review_date`
    (+6 months) — that stamp IS the review cadence; the ROPA is a living record, not a one-off.
-5. Revisions: upload a new artifact with `supersedes_id` pointing at the previous version —
+5. Revisions: upload a new artifact with the same `document_id_string`, a new
+   `document_version` and `supersedes_id` pointing at the previous version —
    never overwrite an approved ROPA in place.
 
 ## Constraints

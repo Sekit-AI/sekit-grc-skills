@@ -22,7 +22,7 @@ hardcoding one standard.
 | `run-gap-analysis` | Run a framework-scoped gap analysis end to end |
 | `generate-ropa` | Draft and govern a GDPR Article 30 record of processing activities |
 | `manage-knowledge-base` | Read and maintain the per-client wiki |
-| `manage-evidence-and-deliverables` | Collect evidence and govern client deliverables |
+| `manage-evidence-and-documents` | Collect evidence and govern client documents and files |
 | `manage-assets` | Inventory people, vendors, data, systems, and devices and link them to GRC work |
 | `sync-asset-inventory` | Keep a client's asset inventory in step with AWS, Vercel, or another source |
 

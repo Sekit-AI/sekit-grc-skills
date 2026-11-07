@@ -1,7 +1,7 @@
 interface:
   display_name: "Manage Sekit Evidence"
-  short_description: "Collect evidence and govern deliverables"
-  default_prompt: "Use $manage-evidence-and-deliverables to collect evidence or manage a Sekit deliverable."
+  short_description: "Collect evidence and govern client documents"
+  default_prompt: "Use $manage-evidence-and-documents to collect evidence or manage a Sekit governed document."
 dependencies:
   tools:
     - type: "mcp"
