@@ -194,9 +194,10 @@ When the tool is listed:
 - **`list_risk_approver_options(client_organization_id)`** — who may approve: people with
   access to the client (`kind: "user"`, persons only, never agents) and its kept person assets
   (`kind: "asset"`). A person asset with a member's address is folded into that member
-  (`matched_asset_id`). The default approver is the risk owner when the owner is a kept person
-  asset (or the member it matches). Never invent an approver: if nobody fits, leave it unset
-  and say so.
+  (`matched_asset_ids` lists every folded asset; `matched_asset_id` is the first). The default
+  approver is the risk owner when the owner is a kept person asset (or the member it matches,
+  through any of their `matched_asset_ids`). Never invent an approver: if nobody fits, leave it
+  unset and say so.
 - **On `create_risk` / `update_risk`**, with `treatment: "accept"`, name ONE approver, never
   both:
   - `accepted_by_asset_id` — a person asset of THIS client. The acceptance is recorded today
@@ -205,16 +206,20 @@ When the tool is listed:
     acceptance stays PENDING until that person accepts it in the console.
 
   `acceptance_expires_at` (`YYYY-MM-DD`, after the accepted date; `null` = no expiry) and
-  `acceptance_rationale` complete it. The accepted date is never written here. Sending an
+  `acceptance_rationale` complete it. For a pending `accepted_by_user_id` approver, an omitted
+  expiry means a year after they accept, and `null` means no expiry on purpose
+  (`acceptance_no_expiry` reads true). The accepted date is never written here. Sending an
   acceptance field with any other treatment is a 422, and moving a risk off `accept` clears the
   whole record.
 - **`record_risk_acceptance(client_organization_id, risk_id, ...)`** — record an acceptance on
   the approver's behalf, or renew an expired one. The treatment must already be `accept`. Name
   the approver with `accepted_by_asset_id` or `accepted_by_user_id`, or omit both to keep the
-  one already named. `accepted_at` defaults to today in the client's timezone and
-  `acceptance_expires_at` to a year after it (`null` = no expiry). **Only record an acceptance
-  the approver actually gave**, and say who gave it and when before you write. You are the
-  recorder. An agent's record applies and is listed for review in «Actualizaciones de agentes».
+  one already named. `accepted_at` defaults to today in the client's timezone.
+  `acceptance_expires_at` defaults to the expiry already chosen for a pending approver you keep
+  (a date, or none when `acceptance_no_expiry` is true), and otherwise to a year after
+  `accepted_at` (`null` = no expiry). **Only record an acceptance the approver actually
+  gave**, and say who gave it and when before you write. You are the recorder. An agent's
+  record applies and is listed for review in «Actualizaciones de agentes».
 - **`accept_risk(client_organization_id, risk_id)`** — the named approver accepting it
   themselves («Aceptar riesgo»). It works only when the signed-in person is the
   `accepted_by_user_id` approver (`acceptance_awaits_viewer` is true); anyone else, and every
@@ -222,9 +227,11 @@ When the tool is listed:
   record someone else's acceptance; use `record_risk_acceptance`.
 
 Reads carry the record: `accepted_by_name`, `accepted_by_kind` (`asset` \| `user`),
-`accepted_at`, `acceptance_expires_at`, `acceptance_recorded_by_user_id` and
-`acceptance_recorded_by_name`, `acceptance_expired`, `acceptance_awaits_viewer` (you are the
-approver it waits on), and `acceptance_status`, judged against today in the client's timezone.
+`accepted_at`, `acceptance_expires_at`, `acceptance_no_expiry` (true when the expiry was
+cleared on purpose, so a pending acceptance will have none once given; it is still
+«Pendiente»), `acceptance_recorded_by_user_id` and `acceptance_recorded_by_name`,
+`acceptance_expired`, `acceptance_awaits_viewer` (you are the approver it waits on), and
+`acceptance_status`, judged against today in the client's timezone.
 Describe an acceptance with the status's words and no stronger ones, because the client signs
 on that basis and an expired or unanswered acceptance is exposure they still carry:
 
