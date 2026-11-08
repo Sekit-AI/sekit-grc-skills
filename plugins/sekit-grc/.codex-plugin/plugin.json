@@ -17,7 +17,7 @@
   "interface": {
     "displayName": "Sekit GRC",
     "shortDescription": "Guided GRC workflows for Sekit consultants",
-    "longDescription": "Understand Sekit and carry out framework-agnostic risk, control, gap-analysis, asset, evidence, knowledge, and deliverable workflows through the bundled Sekit consultant connection.",
+    "longDescription": "Understand Sekit and carry out framework-agnostic risk, control, gap-analysis, asset, evidence, knowledge, and governed-document workflows through the bundled Sekit consultant connection.",
     "developerName": "Sekit AI",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],

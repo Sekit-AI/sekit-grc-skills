@@ -672,6 +672,17 @@ test('skills teach the five document kinds and never a retired kind (SK-1087)', 
   assert.match(ropa, /`kind="record"`, `subtype="ropa"`/);
 });
 
+test('plugin descriptions users see say documents, never deliverables (SK-1087)', () => {
+  for (const manifest of [
+    '.claude-plugin/marketplace.json',
+    'plugins/sekit-grc/.claude-plugin/plugin.json',
+    'plugins/sekit-grc/.codex-plugin/plugin.json',
+  ]) {
+    const source = readFileSync(resolve(root, manifest), 'utf8');
+    assert.doesNotMatch(source, /deliverable/i, `${manifest} still says deliverable`);
+  }
+});
+
 test('the guide teaches the SK-1054 projection tools and company_control is never sent on create', () => {
   const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
   for (const name of ['preview_projected_controls', 'confirm_projected_controls']) {

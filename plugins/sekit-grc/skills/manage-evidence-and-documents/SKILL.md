@@ -88,8 +88,8 @@ governed document with `kind="policy"`. Manage with `list_client_files` / `get_c
 `update_client_file` / `archive_client_file` / `restore_client_file`. The returned row's `id` is
 the `client_file_id` you pass to `create_evidence(kind="client_file", ...)`.
 
-A file that belongs to a kept governed document cannot be updated, archived or restored directly:
-Sekit answers 409 naming the document. Manage it through the document instead.
+A file that belongs to a governed document, kept or archived, cannot be updated, archived or
+restored directly: Sekit answers 409 naming the document. Manage it through the document instead.
 
 ### Governed documents (artifacts)
 
