@@ -14,7 +14,7 @@ tool catalog; `sekit-mcp-guide` owns operational detail.
 If the user has already named a goal, use it. Otherwise ask one short question:
 
 > What would you most like to do first: understand a client, assess controls, organize risks,
-> collect evidence, or prepare a deliverable?
+> collect evidence, or prepare a client document?
 
 Answer in the user's language. Keep Sekit product names intact and explain specialist terms in
 plain language.
@@ -23,7 +23,7 @@ plain language.
 
 Sekit is a workspace for cybersecurity and GRC consultants. It keeps each client's context,
 assets, risks, frameworks, control evaluations, Solicitudes (client evidence collection), the
-client portal, and governed deliverables together. This plugin lets the consultant ask their AI host to work with that
+client portal, and governed documents (policies, procedures, plans and records) together. This plugin lets the consultant ask their AI host to work with that
 information through Sekit's consultant connector. Reads stay tenant-scoped and writes are
 audited; the
 consultant remains responsible for judgments, approvals, and anything sent to a client.
@@ -35,8 +35,8 @@ Expand only the capability area relevant to the user's goal:
 | Understand a client | Build reusable context in the client wiki and inventory people, vendors, data, systems, and devices | `manage-knowledge-base`, `manage-assets`, `sync-asset-inventory` |
 | Assess posture or a standard | Scope a framework, evaluate assessable controls, record gaps, and use the crosswalk | `run-gap-analysis`, `evaluate-controls` |
 | Manage risk | Build and maintain a risk register with likelihood, impact, ownership, and evidence | `analyze-risks` |
-| Collect proof from a client | Share a Solicitud with the client's people, follow what they upload, review the agent proposals, and link accepted evidence | `manage-evidence-and-deliverables` |
-| Produce client work | Upload, review, approve, supersede, and archive governed deliverables | `manage-evidence-and-deliverables` |
+| Collect proof from a client | Share a Solicitud with the client's people, follow what they upload, review the agent proposals, and link accepted evidence | `manage-evidence-and-documents` |
+| Produce client work | Upload, review, approve, version, and archive governed documents (policies, procedures, plans, records), or convert a file the client already sent into one | `manage-evidence-and-documents` |
 | Prepare a GDPR ROPA | Gather processing activities and produce a governed Article 30 record | `generate-ropa` |
 
 Be explicit about limits when relevant: Sekit supports a consultant's professional work; it does

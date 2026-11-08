@@ -59,7 +59,7 @@ the client already uses.
 ## Using the wiki as evidence
 
 A wiki page can back a risk or control evaluation: `create_evidence(..., kind="wiki",
-wiki_path="<path>")`. See **manage-evidence-and-deliverables**.
+wiki_path="<path>")`. See **manage-evidence-and-documents**.
 
 ## Notes
 

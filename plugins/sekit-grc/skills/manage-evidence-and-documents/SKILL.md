@@ -1,13 +1,14 @@
 ---
-name: manage-evidence-and-deliverables
-description: "Attach evidence, follow the evidence-collection workflow (Solicitudes, the client portal and the agent proposals they produce), and manage files and deliverables for a Sekit client over the consultant MCP. Link evidence to a risk or control evaluation, follow what a client uploads through a Solicitud (its board, asks and portal conversations) and turn accepted proof into evidence, read the reports the console generated, upload client files and artifacts via the two-step presigned flow, and govern deliverables from draft to approved. Use when the user wants to back a risk or control with evidence, ask a client for a document (a Solicitud), check what a client has sent, upload a document or screenshot for a Sekit client, produce or track a deliverable such as a gap report, policy, risk register, ROPA, or IR plan, approve or revert a deliverable, or manage a client's files. Read the sekit-mcp-guide skill first."
+name: manage-evidence-and-documents
+description: "Attach evidence, follow the evidence-collection workflow (Solicitudes, the client portal and the agent proposals they produce), and manage a Sekit client's governed documents and loose files over the consultant MCP. Link evidence to a risk or control evaluation, follow what a client uploads through a Solicitud and turn accepted proof into evidence, read the reports the console generated, upload client files and governed documents via the two-step presigned flow or convert a loose file into a document, and govern policies, procedures, plans and records from draft to approved, with a document code, versions and the file each document owns. Use when the user wants to back a risk or control with evidence, ask a client for a document (a Solicitud), check what a client has sent, upload a document or screenshot for a Sekit client, register or version a policy, procedure, plan or record (such as a ROPA or DPA), approve or revert a document, or manage a client's files. Read the sekit-mcp-guide skill first."
 ---
 
-# Manage evidence + deliverables
+# Manage evidence + documents
 
 Three related jobs over the Sekit consultant MCP: **(A) evidence** — linking proof to a risk or
-control evaluation; **(B) files + deliverables** — uploading client files and producing,
-governing, and approving artifacts; and **(C) Solicitudes** — the client-facing collection
+control evaluation; **(B) governed documents + client files** — registering, versioning and
+approving a company's policies, procedures, plans and records, and uploading loose client files;
+and **(C) Solicitudes** — the client-facing collection
 workflow (ask a client for evidence and follow what comes back). Read **sekit-mcp-guide** first.
 
 > **A vs C — don't confuse them.** `create_evidence` (A) records that a *thing you already
@@ -28,7 +29,7 @@ The **source field is determined by `kind`** (Sekit returns a 422 on a mismatch)
 | `client_file` | `client_file_id` | an uploaded file (see B) |
 | `wiki` | `wiki_path` | a knowledge-base page (see manage-knowledge-base) |
 | `inference` | `body` | your reasoned conclusion (free text) |
-| `artifact` | `artifact_id` | a deliverable (see B) |
+| `artifact` | `artifact_id` | a governed document (see B) |
 
 Optional: `confidence` (`high`/`medium`/`low`, defaults `medium`), `collected_at` (a full ISO-8601
 timestamp **with offset**, e.g. `2026-06-09T10:00:00+02:00` — a bare date is rejected; omit to
@@ -41,11 +42,22 @@ from the authenticated connector identity.
 - `archive_evidence` / `restore_evidence` — soft-delete / undo.
 
 **Typical flow:** create a risk or CE → decide what proves it → `create_evidence` with the right
-`kind`. For a documented control, that's usually `kind="client_file"` (the policy PDF) or
-`kind="wiki"` (a KB page); for a judgement call, `kind="inference"` with your reasoning in
+`kind`. For a documented control, that's usually `kind="artifact"` (the governed policy or
+procedure), `kind="client_file"` (a loose file such as a config export) or `kind="wiki"` (a KB
+page); for a judgement call, `kind="inference"` with your reasoning in
 `body`.
 
-## B. Files + deliverables
+## B. Governed documents + client files
+
+Sekit keeps two kinds of upload apart, and so does the console:
+
+- **Governed documents** (artifacts) live in «Políticas y procedimientos» / «Policies and
+  procedures»: the company's policies, procedures, plans and records, each with a document
+  code, versions, a **Document Control Block** and an approval lifecycle.
+- **Client files** live in «Archivos» / «Files»: loose material such as transcripts,
+  screenshots, config exports, contracts, and a report the client uploaded.
+
+Reports the console generates are neither; they live in «Informes» (see Generated reports below).
 
 ### Uploading bytes — the two-step presigned flow
 
@@ -70,34 +82,57 @@ model.** You request a presigned grant, then PUT the raw bytes to it.
 ### Client files
 
 `create_client_file_from_upload(client_organization_id, signed_id, kind, description?)` — `kind`
-is `transcript` | `policy_pdf` | `screenshot` | `config_export` | `contract` | `image` |
-`other`. Manage with `list_client_files` / `get_client_file` / `update_client_file` /
-`archive_client_file` / `restore_client_file`. The returned row's `id` is the `client_file_id`
-you pass to `create_evidence(kind="client_file", ...)`.
+is `transcript` | `screenshot` | `config_export` | `contract` | `image` | `other`. `policy_pdf` is
+retired: Sekit still accepts it and stores `other`. A policy is not a file kind; register it as a
+governed document with `kind="policy"`. Manage with `list_client_files` / `get_client_file` /
+`update_client_file` / `archive_client_file` / `restore_client_file`. The returned row's `id` is
+the `client_file_id` you pass to `create_evidence(kind="client_file", ...)`.
 
-### Artifacts (deliverables)
+A file that belongs to a governed document, kept or archived, cannot be updated, archived or
+restored directly: Sekit answers 409 naming the document. Manage it through the document instead.
 
-An artifact is a governed deliverable (gap report, policy, risk register, DPA, ROPA, IR plan,
-runbook, …) with a **Document Control Block** and an approval lifecycle.
+### Governed documents (artifacts)
 
-`create_artifact_from_upload` **required**: `client_organization_id`, `signed_id`,
+An artifact is one version of a governed document. Each owns one client file: the artifact row
+carries `client_file_id`, and Sekura reads the document through that file's extracted text.
+
+`create_artifact_from_upload` **required**: `client_organization_id`, the document's bytes,
 `document_id_string`, `kind`, `classification`, `owner_name`, `title`. It lands as **`draft`**.
+The bytes come one of two ways; pass exactly one, never both:
 
-- `document_id_string` — the client's Document Control Block identifier (a structured code, e.g.
-  `RPT-SW11-GAP-2026-05-001`). Follow the client's documentation-control scheme; **ask the user**
-  if you don't have it rather than inventing one.
-- `kind` — `policy` | `gap_report` | `risk_register` | `dpa` | `ropa` | `ir_plan` | `runbook` |
-  `other`. For authoring a ROPA end-to-end (gather → draft → deliver), see **generate-ropa**.
+- `signed_id` — bytes you just uploaded through `prepare_artifact_upload` (flow above).
+- `client_file_id` — **convert a loose file into a document** («Convertir en documento»): a
+  file of the same client from `list_client_files` that is really a policy, procedure, plan or
+  record. The file **moves** to become the new document's file; nothing is copied. Evidence that
+  pointed at the file stays on the file. Example:
+  `create_artifact_from_upload(client_organization_id, client_file_id=<id>,
+  document_id_string="POL-001", kind="policy", classification, owner_name, title)`.
+
+Fields:
+
+- `document_id_string` — the document's code, e.g. `POL-001`. Every version of one document
+  shares the code. Follow the client's documentation-control scheme; **ask the user** if you
+  don't have it rather than inventing one.
+- `kind` — `policy` | `procedure` | `plan` | `record` | `other`. Narrow it with `subtype`:
+  a ROPA is `kind="record"` + `subtype="ropa"` (or `RAT`), a DPA is `record` + `dpa`, a runbook
+  is `procedure` + `runbook`, an incident response plan is `plan` + `ir_plan`. Sekit still
+  accepts the retired kinds `runbook`, `ir_plan`, `ropa` and `dpa` on input, stores the new kind
+  and copies the old value into an empty `subtype`; responses never return them, so send the
+  new kind. An uploaded gap report or risk register is not a governed document: keep it as a
+  client file (`kind="other"`); generated reports are read as reports (below). For authoring a
+  ROPA end-to-end (gather → draft → deliver), see **generate-ropa**.
 - `classification` — `public` | `internal` | `confidential` | `strictly_confidential`.
   **`handling` is required** when classification is `confidential` or `strictly_confidential`.
-- `document_version` defaults to `v1.0`. `supersedes_id` links a new version to the one it
-  replaces (supersede chain). `assessment_id` / `supersedes_id` must belong to the same client.
+- **Versions.** `document_version` defaults to `v1.0`. A new version is a new artifact with the
+  same `document_id_string`, a new `document_version`, and `supersedes_id` set to the current
+  version's id. `assessment_id` / `supersedes_id` must belong to the same client. Never
+  overwrite an approved version in place.
 - `status`, `approver_name`, `effective_date`, `approved_at` are **server-controlled** — never
   set them here; they transition via approve/revert.
 
-Update with `update_artifact(..., artifact_id=<id>)` (PATCH; pass a new `signed_id` to re-attach
-a file — the old blob is purged). Review with `list_artifacts` / `get_artifact` (each carries
-`download_url`).
+Update with `update_artifact(..., artifact_id=<id>)` (PATCH; on a draft, pass a new `signed_id`
+to replace the document's bytes). Review with `list_artifacts` / `get_artifact` (each carries
+`download_url` and `client_file_id`). `archive_artifact` archives the document's file too.
 
 ### Generated reports (read-only)
 
@@ -196,6 +231,10 @@ suggest any `*_evidence_request*`, `*_evidence_package*`, thread or wave tool.
 - Upload is two-step; bytes go to the presigned URL, never through a tool argument.
 - Artifacts land `draft`; lifecycle fields are server-controlled; any member may call
   `approve_artifact`.
+- Document `kind` is `policy` | `procedure` | `plan` | `record` | `other`, narrowed by
+  `subtype`; every version shares the `document_id_string` and links back with `supersedes_id`.
+- `create_artifact_from_upload` takes `signed_id` or `client_file_id`, never both; a converted
+  file moves into the document, and a document's own file is managed through the document.
 - `handling` required for confidential / strictly_confidential artifacts.
 - Ask a client for evidence only through a Solicitud, started from the console; over MCP you
   preview, read (session, board, asks, conversations) and share one (`mint_portal_token` is

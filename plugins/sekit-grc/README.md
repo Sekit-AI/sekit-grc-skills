@@ -17,7 +17,7 @@ The plugin and connector intentionally have different names. `sekit-grc` is the 
 | `run-gap-analysis` | Run a framework-scoped assessment workflow |
 | `generate-ropa` | Prepare a GDPR Article 30 record of processing activities |
 | `manage-knowledge-base` | Maintain client context in the wiki |
-| `manage-evidence-and-deliverables` | Collect evidence and govern deliverables |
+| `manage-evidence-and-documents` | Collect evidence and govern client documents and files |
 | `manage-assets` | Inventory people, vendors, data, systems, and devices and connect them to GRC work |
 | `sync-asset-inventory` | Mirror AWS, Vercel, or another source into a client's asset inventory and report what changed |
 

@@ -317,7 +317,7 @@ deserves a status/progress update of its own — propose it, don't apply it sile
 ### 7. Link evidence
 
 For each risk, attach what backs it: `create_evidence(evidenceable_type="Risk",
-evidenceable_id=<risk id>, kind=..., ...)`. See **manage-evidence-and-deliverables** for the
+evidenceable_id=<risk id>, kind=..., ...)`. See **manage-evidence-and-documents** for the
 `kind → source` mapping.
 
 ### 8. Governance (when asked)

@@ -281,7 +281,7 @@ test("a person's write applies directly and is not an Agent update (SK-853)", ()
   assert.doesNotMatch(rules, /cannot approve/);
 
   for (const name of [
-    'manage-evidence-and-deliverables',
+    'manage-evidence-and-documents',
     'generate-ropa',
     'sekit-onboarding',
     'evaluate-controls',
@@ -640,7 +640,7 @@ test('people in tool output are labels, never addresses (SK-843)', () => {
   assert.match(rules, /never treat a label as an address/);
   assert.match(rules, /`null`\s+for anyone outside it/);
 
-  const deliverables = readFileSync(resolve(skillsRoot, 'manage-evidence-and-deliverables/SKILL.md'), 'utf8');
+  const deliverables = readFileSync(resolve(skillsRoot, 'manage-evidence-and-documents/SKILL.md'), 'utf8');
   assert.match(deliverables, /never your email/);
 });
 
@@ -654,6 +654,33 @@ test('no skill teaches a field Sekit dropped, and the guide lists company access
   }
   const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
   assert.match(guide, /\| \*\*Company access\*\*[^\n]*`list_company_access`/);
+});
+
+test('skills teach the five document kinds and never a retired kind (SK-1087)', () => {
+  for (const skillName of readdirSync(skillsRoot)) {
+    if (!statSync(resolve(skillsRoot, skillName)).isDirectory()) continue;
+    const source = readFileSync(resolve(skillsRoot, skillName, 'SKILL.md'), 'utf8');
+    const hit = source.match(/gap_report|risk_register|Entregables|kind="(?:ropa|dpa|ir_plan|runbook)"/);
+    assert.equal(hit, null, `${skillName} still teaches the retired ${hit?.[0]}`);
+  }
+  const documents = readFileSync(resolve(skillsRoot, 'manage-evidence-and-documents/SKILL.md'), 'utf8');
+  assert.match(documents, /`kind` — `policy` \| `procedure` \| `plan` \| `record` \| `other`/);
+  assert.match(documents, /is `transcript` \| `screenshot` \| `config_export` \| `contract` \| `image` \| `other`/);
+  assert.match(documents, /`policy_pdf` is\s+retired/);
+  assert.match(documents, /`client_file_id` — \*\*convert a loose file into a document\*\*/);
+  const ropa = readFileSync(resolve(skillsRoot, 'generate-ropa/SKILL.md'), 'utf8');
+  assert.match(ropa, /`kind="record"`, `subtype="ropa"`/);
+});
+
+test('plugin descriptions users see say documents, never deliverables (SK-1087)', () => {
+  for (const manifest of [
+    '.claude-plugin/marketplace.json',
+    'plugins/sekit-grc/.claude-plugin/plugin.json',
+    'plugins/sekit-grc/.codex-plugin/plugin.json',
+  ]) {
+    const source = readFileSync(resolve(root, manifest), 'utf8');
+    assert.doesNotMatch(source, /deliverable/i, `${manifest} still says deliverable`);
+  }
 });
 
 test('the guide teaches the SK-1054 projection tools and company_control is never sent on create', () => {

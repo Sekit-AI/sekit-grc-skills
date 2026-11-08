@@ -155,7 +155,7 @@ consultant confirm:
   `estimated_effort`, `current_tier`/`target_tier` (0–4), `owner_type`
   (`consultant`/`client_internal`/`external_specialist`), `confidence`, `notes`.
 - What to ask the client for, from `guidance.evidence_expectation` (collected through a
-  Solicitud, see manage-evidence-and-deliverables). `get_collection_preview(client_organization_id,
+  Solicitud, see manage-evidence-and-documents). `get_collection_preview(client_organization_id,
   gap_analysis_id)` shows the asks a Solicitud for this analysis would request before the
   consultant starts one in the console.
 
@@ -167,14 +167,14 @@ rules and the full field list. Get a go-ahead before firing the whole worklist.
 
 Per CE, `create_evidence(evidenceable_type="ControlEvaluation", evidenceable_id=<id>, ...)` —
 the document/session/inference/wiki/artifact that backs the verdict. See
-**manage-evidence-and-deliverables**.
+**manage-evidence-and-documents**.
 
 ### 6. Track progress
 
 `list_control_evaluations(client_organization_id, gap_analysis_id=<id>)` to see coverage and the
 gap distribution. Surface the gaps (especially `critical`/`high`) and the remediation roadmap to
 the user. Optionally write the narrative to the client wiki (**manage-knowledge-base**) or
-generate a deliverable (**manage-evidence-and-deliverables**).
+register or update a governed document (**manage-evidence-and-documents**).
 
 Readiness rows come back from the same call, so the walk's progress is readable over MCP the
 same way. They never appear in the Bandeja: readiness work is tracked, not signed off.

@@ -169,7 +169,7 @@ field on a different resource.
    changes keep the date. So re-verifying a verdict copied from a base analysis by changing
    it dates it to this cycle. A copied verdict you leave untouched keeps last cycle's date.
 7. **Evidence** — `create_evidence(evidenceable_type="ControlEvaluation", evidenceable_id=<id>,
-   ...)`. See **manage-evidence-and-deliverables**.
+   ...)`. See **manage-evidence-and-documents**.
 8. **Batch** — for a bulk re-key from an external assessment, `import_control_evaluations`
    takes `evaluations: [...]` (1–200 rows, each with the same leg + `status` +
    `evidence_source` + `evaluated_at` rules as a single create). Every row carries its own

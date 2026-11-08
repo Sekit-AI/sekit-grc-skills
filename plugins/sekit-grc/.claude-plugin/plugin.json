@@ -1,5 +1,5 @@
 {
   "name": "sekit-grc",
-  "version": "0.26.0",
-  "description": "Open-source Sekit consultant skills for Claude: guided onboarding plus framework-agnostic workflows for risks, control evaluations, gap analyses, assets, knowledge, evidence, and governed deliverables over the Sekit consultant MCP."
+  "version": "0.27.0",
+  "description": "Open-source Sekit consultant skills for Claude: guided onboarding plus framework-agnostic workflows for risks, control evaluations, gap analyses, assets, knowledge, evidence, and governed documents (policies, procedures, plans, records) over the Sekit consultant MCP."
 }
