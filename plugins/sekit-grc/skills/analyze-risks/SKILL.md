@@ -40,9 +40,9 @@ each one in evidence (the client wiki, control evaluations, declared facts).
 - **`get_connections(client_organization_id, root)`** — for traceability questions ("what treats
   this risk, and what evidence backs that?"): the risk's direct stored links, such as its
   treatment controls and related framework controls; `expand` on a returned key follows the
-  chain on to evaluations and evidence. It is read-only and may be incomplete: check
-  `complete`, and narrow with `types` when it is `false` (see the Connections row in
-  sekit-mcp-guide).
+  chain on to evaluations, evidence and governed documents (`document:<artifact_id>`). It is
+  read-only and may be incomplete: check `complete`, and narrow with `types` when it is
+  `false` (see the Connections row in sekit-mcp-guide).
 
 Each risk you write should trace to something concrete — cite it.
 
