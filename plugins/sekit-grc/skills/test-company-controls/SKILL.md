@@ -73,6 +73,8 @@ company_control_test_id, test_outcome, ...)`:
 
 The origin (note, file or document) is derived from what you send; never send it. The result
 returns `{result, created}`. Results are read back with `get_company_control`.
+`latest_result` and `recent_outcomes` are ordered by `collected_at`, not by when you posted: a
+backfilled result with an earlier `collected_at` does not become the latest one.
 
 ### 5. A failed result
 

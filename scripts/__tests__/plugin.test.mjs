@@ -830,6 +830,7 @@ test('test-company-controls defines a test and records pass and fail with eviden
     /`external_run_id`[\s\S]{0,300}`created: false`[\s\S]{0,300}conflict/,
     // Honesty: only an observed outcome is recorded.
     /\*\*Record only an outcome you observed\.\*\*/,
+    /`latest_result` and `recent_outcomes` are ordered by `collected_at`/,
     // Failure handling routes the follow-up, it never flips the control.
     /A failed result does not change `implementation_status`/,
     /\*\*analyze-risks\*\*/,
