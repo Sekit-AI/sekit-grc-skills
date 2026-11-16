@@ -30,7 +30,9 @@ practice the client does not run.
 - The requirement it answers: `search_control_catalog(client_organization_id, q)` returns the
   company's own kept controls first (`kind: "company_control"`), then catalog hits
   (`kind: "catalog_control"`) with their `framework_control_id`, `control_id` or
-  `custom_control_id`. `list_framework_controls(framework_code, compact: true)` gives a
+  `custom_control_id`. Hits span every framework: keep the ones whose `framework_code` is the
+  client's framework (`framework` on `list_clients`) or one the user named, and confirm the clause
+  is a leaf with `list_framework_controls`. `list_framework_controls(framework_code, compact: true)` gives a
   framework's clauses; only `is_leaf: true` rows are assessable.
 - The practice: the client wiki (`wiki_search`, see **manage-knowledge-base**), governed
   documents (`list_artifacts`) and what the user describes.

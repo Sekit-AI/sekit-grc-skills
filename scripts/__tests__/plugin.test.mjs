@@ -782,6 +782,7 @@ test('manage-company-controls defines, dedupes, creates and links a company cont
     // Duplicate check before any create, archived rows included.
     /`list_company_controls\(client_organization_id, include_archived: true\)`/,
     /`search_control_catalog\(client_organization_id, q\)`/,
+    /keep the ones whose `framework_code` is the\s+client's framework/,
     // The real create contract: only these fields exist.
     /`create_company_control`[\s\S]{0,400}`name`[\s\S]{0,400}`implementation_status`[\s\S]{0,400}`owner_asset_id`[\s\S]{0,400}`perimeter_ids`/,
     /a person asset of THIS client/,
@@ -840,6 +841,7 @@ test('test-company-controls defines a test and records pass and fail with eviden
     /`latest_result` and `recent_outcomes` are ordered by `collected_at`/,
     // Failure handling routes the follow-up, it never flips the control.
     /A failed result does not change `implementation_status`/,
+    /a backfilled fail older than a pass does not/,
     /\*\*analyze-risks\*\*/,
     // Recurring runs: Sekit stores no schedule.
     /Sekit stores no schedule/,

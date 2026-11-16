@@ -82,7 +82,9 @@ backfilled result with an earlier `collected_at` does not become the latest one.
 
 Record a fail as soon as it is observed, with what was seen in `body` and the evidence attached.
 A failed result does not change `implementation_status`, and neither do you: the control is still
-the practice the company runs. `health` turns red or amber on the next read; report it.
+the practice the company runs. When the fail is the test's latest result (by `collected_at`),
+`health` turns red or amber on the next read; a backfilled fail older than a pass does not. Report
+the `health` you read.
 
 Then ask the user for the follow-up and route it:
 
