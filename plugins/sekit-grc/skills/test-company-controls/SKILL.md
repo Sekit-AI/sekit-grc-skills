@@ -63,7 +63,7 @@ company_control_test_id, test_outcome, ...)`:
 
 | Field | Notes |
 |---|---|
-| `test_outcome` | required: `test_outcome` `pass` («Superada») or `fail` («Fallida») |
+| `test_outcome` | required: `pass` («Superada») or `fail` («Fallida») |
 | `client_file_id` | an uploaded file as the evidence (upload it first, see **manage-evidence-and-documents**) |
 | `artifact_id` | a governed document as the evidence; send at most one of `client_file_id` and `artifact_id` |
 | `body` | a written note; otherwise, with neither file nor document, `body` is required. With a file, use it to say what the file shows |
@@ -108,6 +108,7 @@ never archives a test.
 
 ### 7. Retire a test
 
+Retire a test only when the user explicitly asks for it: archiving changes the control's health.
 `archive_company_control_test` is «Descartar» on a test: a test is never deleted.
 Its results are kept and stop counting toward the control's health; new results are refused until it is
 restored. `restore_company_control_test` brings it back (refused with
@@ -122,4 +123,10 @@ control's `health` after the write. Name a person by their label, never an addre
 ## Errors
 
 Every tool returns `{"error": "..."}` on failure. Report it; do not retry a result post without
-an `external_run_id`, because a retry without one creates a second result.
+an `external_run_id`, because a retry without one creates a second result. After a timeout or an
+unclear failure, read `get_company_control` first: if the test's `latest_result` and
+`result_count` show the run landed, do not post it again.
+
+When you run as an agent user, your writes may wait for the consultant's review in «Actualizaciones
+de agentes»: read `list_agent_updates(client_organization_id)` after writing and report what waits
+(see **Agent updates** in sekit-mcp-guide).

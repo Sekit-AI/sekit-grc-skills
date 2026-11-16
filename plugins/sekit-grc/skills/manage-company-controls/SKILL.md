@@ -102,6 +102,10 @@ control that is not linked succeeds with `removed: false`.
 Link a requirement only when the practice actually meets it. A link is a claim an auditor will
 read.
 
+When you run as an agent user, your creates, updates and links apply at once and are also listed
+for the consultant's review in «Actualizaciones de agentes» (see **Agent updates** in
+sekit-mcp-guide). Say so in your report; never mark them reviewed yourself.
+
 ### 6. Confirm the result
 
 Read the control back with `get_company_control(client_organization_id, company_control_id)` and
@@ -128,7 +132,8 @@ also carries:
   set (`[]` = the whole company); omit it to leave the perimeters untouched. The source cannot
   change.
 - `archive_company_control` soft-deletes a control and `restore_company_control` brings it back;
-  both are idempotent. Restore an archived control before updating it. There is no hard delete.
+  both are idempotent. Archiving is a governance action: archive or restore only when the user
+  explicitly asks for that control, never as cleanup you decided on. Restore an archived control before updating it. There is no hard delete.
 - History: `list_company_control_versions` and `get_company_control_version`; reverting stays in
   the console.
 

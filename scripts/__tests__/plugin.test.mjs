@@ -803,6 +803,8 @@ test('manage-company-controls defines, dedupes, creates and links a company cont
     /`health` never changes `implementation_status`/,
     // Archive, never delete.
     /`archive_company_control`[\s\S]{0,200}`restore_company_control`/,
+    /archive or restore only when the user\s+explicitly asks/,
+    /«Actualizaciones de agentes»/,
     /\*\*test-company-controls\*\*/,
   ]) {
     assert.match(skill, pattern);
@@ -822,7 +824,9 @@ test('test-company-controls defines a test and records pass and fail with eviden
     /\| Frequency \|[^\n]*`procedure`/,
     // Recording contract.
     /`record_company_control_test_result\(client_organization_id, company_control_id,\s+company_control_test_id, test_outcome, \.\.\.\)`/,
-    /`test_outcome` `pass` \(«Superada»\) or `fail` \(«Fallida»\)/,
+    /\| `test_outcome` \| required: `pass` \(«Superada»\) or `fail` \(«Fallida»\)/,
+    /Retire a test only when the user explicitly asks/,
+    /read `get_company_control` first: if the test's `latest_result` and\s+`result_count` show the run landed/,
     /`client_file_id`[\s\S]{0,200}`artifact_id`[\s\S]{0,200}at most one/,
     /otherwise[\s\S]{0,80}`body` is required/,
     /`valid_until`[\s\S]{0,120}a pass only/,
@@ -879,6 +883,10 @@ test('the guide, READMEs and onboarding route company controls and their tests (
   const evidence = readFileSync(resolve(skillsRoot, 'manage-evidence-and-documents/SKILL.md'), 'utf8');
   assert.match(evidence, /\(`Risk` \| `ControlEvaluation` \| `CompanyControl`\)/);
   assert.match(evidence, /A test's results are not evidence rows: \*\*test-company-controls\*\*/);
+  assert.match(evidence, /\| `note` \| `body` \| a written note; on a company control only \|/);
+  assert.match(evidence, /\| `inference` \|[^\n]*refused on a company control/);
+  assert.match(evidence, /`valid_until`\n?\s*\(`YYYY-MM-DD`, «Válida hasta», on a company control only/);
+  assert.doesNotMatch(evidence, /a bare date is rejected/);
 });
 
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {

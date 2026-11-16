@@ -1,12 +1,12 @@
 ---
 name: manage-evidence-and-documents
-description: "Attach evidence, follow the evidence-collection workflow (Solicitudes, the client portal and the agent proposals they produce), and manage a Sekit client's governed documents and loose files over the consultant MCP. Link evidence to a risk or control evaluation, follow what a client uploads through a Solicitud and turn accepted proof into evidence, read the reports the console generated, upload client files and governed documents via the two-step presigned flow or convert a loose file into a document, and govern policies, procedures, plans and records from draft to approved, with a document code, versions and the file each document owns. Use when the user wants to back a risk or control with evidence, ask a client for a document (a Solicitud), check what a client has sent, upload a document or screenshot for a Sekit client, register or version a policy, procedure, plan or record (such as a ROPA or DPA), approve or revert a document, or manage a client's files. Read the sekit-mcp-guide skill first."
+description: "Attach evidence, follow the evidence-collection workflow (Solicitudes, the client portal and the agent proposals they produce), and manage a Sekit client's governed documents and loose files via the consultant MCP. Link evidence to a risk, control evaluation or company control, follow what a client uploads through a Solicitud and turn accepted proof into evidence, read the reports the console generated, upload client files and governed documents via the two-step presigned flow or convert a loose file into a document, and govern policies, procedures, plans and records from draft to approved, with a document code, versions and the file each document owns. Use when the user wants to back a risk or control with evidence, ask a client for a document (a Solicitud), check what a client has sent, upload a document or screenshot, register or version a policy, procedure, plan or record (such as a ROPA or DPA), approve or revert a document, or manage a client's files. Read the sekit-mcp-guide skill first."
 ---
 
 # Manage evidence + documents
 
-Three related jobs over the Sekit consultant MCP: **(A) evidence** — linking proof to a risk or
-control evaluation; **(B) governed documents + client files** — registering, versioning and
+Three related jobs over the Sekit consultant MCP: **(A) evidence** — linking proof to a risk,
+control evaluation or company control; **(B) governed documents + client files** — registering, versioning and
 approving a company's policies, procedures, plans and records, and uploading loose client files;
 and **(C) Solicitudes** — the client-facing collection
 workflow (ask a client for evidence and follow what comes back). Read **sekit-mcp-guide** first.
@@ -30,12 +30,15 @@ The **source field is determined by `kind`** (Sekit returns a 422 on a mismatch)
 |---|---|---|
 | `client_file` | `client_file_id` | an uploaded file (see B) |
 | `wiki` | `wiki_path` | a knowledge-base page (see manage-knowledge-base) |
-| `inference` | `body` | your reasoned conclusion (free text) |
+| `inference` | `body` | your reasoned conclusion (free text); refused on a company control |
+| `note` | `body` | a written note; on a company control only |
 | `artifact` | `artifact_id` | a governed document (see B) |
 
 Optional: `confidence` (`high`/`medium`/`low`, defaults `medium`), `collected_at` (a full ISO-8601
-timestamp **with offset**, e.g. `2026-06-09T10:00:00+02:00` — a bare date is rejected; omit to
-record now and set it only to backfill historical evidence). The collecting user comes
+timestamp with offset, e.g. `2026-06-09T10:00:00+02:00`, or a bare date read as midnight UTC;
+omit to record now and set it only to backfill historical evidence), and `valid_until`
+(`YYYY-MM-DD`, «Válida hasta», on a company control only; null never expires, and it is refused
+on every other target). The collecting user comes
 from the authenticated connector identity.
 
 - `list_evidence` / `get_evidence` to review what's attached.
@@ -47,7 +50,7 @@ from the authenticated connector identity.
 `kind`. For a documented control, that's usually `kind="artifact"` (the governed policy or
 procedure), `kind="client_file"` (a loose file such as a config export) or `kind="wiki"` (a KB
 page); for a judgement call, `kind="inference"` with your reasoning in
-`body`.
+`body`, except on a company control, which takes `kind="note"` with `body` instead.
 
 ## B. Governed documents + client files
 
