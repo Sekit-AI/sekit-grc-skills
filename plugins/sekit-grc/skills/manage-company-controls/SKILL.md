@@ -102,9 +102,10 @@ control that is not linked succeeds with `removed: false`.
 Link a requirement only when the practice actually meets it. A link is a claim an auditor will
 read.
 
-When you run as an agent user, your creates, updates and links apply at once and are also listed
-for the consultant's review in «Actualizaciones de agentes» (see **Agent updates** in
-sekit-mcp-guide). Say so in your report; never mark them reviewed yourself.
+When you run as an agent user, some of your writes are also listed for the consultant's review in
+«Actualizaciones de agentes»; **Agent updates** in sekit-mcp-guide says which subjects are. Report
+what `list_agent_updates(client_organization_id)` shows after you write; never mark it reviewed
+yourself.
 
 ### 6. Confirm the result
 
@@ -130,10 +131,10 @@ also carries:
 - `update_company_control` changes a kept control. An omitted field is left as it is;
   `description: null` and `owner_asset_id: null` clear them. `perimeter_ids` replaces the whole
   set (`[]` = the whole company); omit it to leave the perimeters untouched. The source cannot
-  change.
+  change. Restore an archived control before updating it.
 - `archive_company_control` soft-deletes a control and `restore_company_control` brings it back;
   both are idempotent. Archiving is a governance action: archive or restore only when the user
-  explicitly asks for that control, never as cleanup you decided on. Restore an archived control before updating it. There is no hard delete.
+  explicitly asks for that control, never as cleanup you decided on. There is no hard delete.
 - History: `list_company_control_versions` and `get_company_control_version`; reverting stays in
   the console.
 

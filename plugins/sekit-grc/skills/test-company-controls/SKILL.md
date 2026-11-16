@@ -13,7 +13,9 @@ already exist: create and link it with **manage-company-controls**.
 
 ### 1. Orient and find the control
 
-`whoami` → `list_clients` → `list_company_controls(client_organization_id)`. Read the control
+`whoami` → `list_clients` → `list_company_controls(client_organization_id, include_archived: true)`.
+An archived control (`discarded_at` set) reads as `not_found` and takes no tests or results: offer
+to restore it with **manage-company-controls** first. Read the control
 with `get_company_control(client_organization_id, company_control_id)`: its `description` says
 how the practice runs, and `tests` lists the live tests, each with `latest_result`,
 `recent_outcomes` (the last 10, oldest first) and `result_count`. Reuse a live test that already
@@ -68,7 +70,7 @@ company_control_test_id, test_outcome, ...)`:
 | `artifact_id` | a governed document as the evidence; send at most one of `client_file_id` and `artifact_id` |
 | `body` | a written note; otherwise, with neither file nor document, `body` is required. With a file, use it to say what the file shows |
 | `collected_at` | when the check ran: a full ISO-8601 timestamp or a bare date (read as midnight UTC). Defaults to now; refused more than 5 minutes in the future. Set it to the run's real time |
-| `valid_until` | `YYYY-MM-DD` («Válida hasta»), for a pass only: a failed result takes none, and a pass without it never expires. Set it to the next due run, so a missed run shows up in `health` |
+| `valid_until` | `YYYY-MM-DD` («Válida hasta»), for a pass only: a failed result takes none, and a pass without it never expires. Set it a little past the next due run (for a daily check, two days out), so a missed run shows up in `health` without a false alert when a run posts late |
 | `external_run_id` | a stable id for one run (up to 200 characters), see step 6 |
 
 The origin (note, file or document) is derived from what you send; never send it. The result
@@ -98,10 +100,11 @@ Sekit stores no schedule: the cadence lives in the `procedure`, and the expiry o
 (`valid_until`) is what makes a missed run visible.
 
 A scheduled job or bot sends `external_run_id` with every post, for example
-`backup-nightly-2026-11-16`. The post is idempotent per test and run id: a retry with the same
+`backup-nightly-2026-11-16T02:10Z`, with the run's time, not only its date. The post is idempotent per test and run id: a retry with the same
 outcome returns the kept result with `created: false` (also after the test was archived), and
 the other outcome for that run id is a conflict. Without a run id every post is a new result, so
-a retried post would count twice. Use a new run id for each real run, never for a retry.
+a retried post would count twice. Use a new run id for each real run, including a re-run after a fix on the same day, and never for a
+retry.
 
 An unattended run records only what its instruction asks for and only outcomes it observed; it
 never archives a test.
@@ -123,10 +126,12 @@ control's `health` after the write. Name a person by their label, never an addre
 ## Errors
 
 Every tool returns `{"error": "..."}` on failure. Report it; do not retry a result post without
-an `external_run_id`, because a retry without one creates a second result. After a timeout or an
-unclear failure, read `get_company_control` first: if the test's `latest_result` and
-`result_count` show the run landed, do not post it again.
+an `external_run_id`, because a retry without one creates a second result. Before a post without a run id, note the test's
+`result_count`; after a timeout or an unclear failure, read `get_company_control` first: if
+`result_count` grew or `recent_outcomes` holds the run's `collected_at`, it landed, so do not post
+it again.
 
-When you run as an agent user, your writes may wait for the consultant's review in «Actualizaciones
-de agentes»: read `list_agent_updates(client_organization_id)` after writing and report what waits
-(see **Agent updates** in sekit-mcp-guide).
+When you run as an agent user, some of your writes are also listed for the consultant's review in
+«Actualizaciones de agentes»; **Agent updates** in sekit-mcp-guide says which subjects are. Report
+what `list_agent_updates(client_organization_id)` shows after you write; never mark it reviewed
+yourself.

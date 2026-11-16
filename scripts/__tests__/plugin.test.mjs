@@ -804,7 +804,7 @@ test('manage-company-controls defines, dedupes, creates and links a company cont
     // Archive, never delete.
     /`archive_company_control`[\s\S]{0,200}`restore_company_control`/,
     /archive or restore only when the user\s+explicitly asks/,
-    /«Actualizaciones de agentes»/,
+    /\*\*Agent updates\*\* in sekit-mcp-guide says which subjects are/,
     /\*\*test-company-controls\*\*/,
   ]) {
     assert.match(skill, pattern);
@@ -826,7 +826,10 @@ test('test-company-controls defines a test and records pass and fail with eviden
     /`record_company_control_test_result\(client_organization_id, company_control_id,\s+company_control_test_id, test_outcome, \.\.\.\)`/,
     /\| `test_outcome` \| required: `pass` \(«Superada»\) or `fail` \(«Fallida»\)/,
     /Retire a test only when the user explicitly asks/,
-    /read `get_company_control` first: if the test's `latest_result` and\s+`result_count` show the run landed/,
+    /note the test's\s+`result_count`; after a timeout or an unclear failure, read `get_company_control` first/,
+    /including a re-run after a fix on the same day/,
+    /`list_company_controls\(client_organization_id, include_archived: true\)`[\s\S]{0,200}`not_found`/,
+    /\*\*Agent updates\*\* in sekit-mcp-guide says which subjects are/,
     /`client_file_id`[\s\S]{0,200}`artifact_id`[\s\S]{0,200}at most one/,
     /otherwise[\s\S]{0,80}`body` is required/,
     /`valid_until`[\s\S]{0,120}a pass only/,
