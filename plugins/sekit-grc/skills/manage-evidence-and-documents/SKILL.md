@@ -17,11 +17,13 @@ workflow (ask a client for evidence and follow what comes back). Read **sekit-mc
 
 ## A. Evidence
 
-Evidence links a **source** to a **target** (a Risk or a ControlEvaluation), so a verdict is
-backed by something concrete.
+Evidence links a **source** to a **target** (a Risk, a ControlEvaluation or a CompanyControl), so a
+verdict or a practice is backed by something concrete. On a company control the evidence is a document
+(`kind` `client_file`, `artifact` or `wiki`) or a written note (`kind` `note` with `body`), never
+`inference`, and may carry `valid_until` (`YYYY-MM-DD`; null never expires). A test's results are not evidence rows: **test-company-controls** posts them.
 
 `create_evidence` **required**: `client_organization_id`, `evidenceable_type`
-(`Risk` | `ControlEvaluation`), `evidenceable_id` (the target's id, same client), and `kind`.
+(`Risk` | `ControlEvaluation` | `CompanyControl`), `evidenceable_id` (the target's id, same client), and `kind`.
 The **source field is determined by `kind`** (Sekit returns a 422 on a mismatch):
 
 | `kind` | Source field to also pass | Meaning |
