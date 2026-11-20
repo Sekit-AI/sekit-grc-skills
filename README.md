@@ -25,6 +25,8 @@ hardcoding one standard.
 | `manage-evidence-and-documents` | Collect evidence and govern client documents and files |
 | `manage-assets` | Inventory people, vendors, data, systems, and devices and link them to GRC work |
 | `sync-asset-inventory` | Keep a client's asset inventory in step with AWS, Vercel, or another source |
+| `manage-company-controls` | Define a client's own controls and link them to the framework controls they cover |
+| `test-company-controls` | Define control tests and record pass or fail results with evidence |
 
 These skills assist professional judgment; they do not certify compliance or replace legal
 advice. Writes are real and audited, and client-facing actions require confirmation.

@@ -35,6 +35,7 @@ Expand only the capability area relevant to the user's goal:
 | Understand a client | Build reusable context in the client wiki and inventory people, vendors, data, systems, and devices | `manage-knowledge-base`, `manage-assets`, `sync-asset-inventory` |
 | Assess posture or a standard | Scope a framework, evaluate assessable controls, record gaps, and use the crosswalk | `run-gap-analysis`, `evaluate-controls` |
 | Manage risk | Build and maintain a risk register with likelihood, impact, ownership, and evidence | `analyze-risks` |
+| Run the client's own controls | Register the practices the client runs as company controls, link them to framework requirements, define their tests, and record pass or fail with evidence | `manage-company-controls`, `test-company-controls` |
 | Collect proof from a client | Share a Solicitud with the client's people, follow what they upload, review the agent proposals, and link accepted evidence | `manage-evidence-and-documents` |
 | Produce client work | Upload, review, approve, version, and archive governed documents (policies, procedures, plans, records), or convert a file the client already sent into one | `manage-evidence-and-documents` |
 | Prepare a GDPR ROPA | Gather processing activities and produce a governed Article 30 record | `generate-ropa` |

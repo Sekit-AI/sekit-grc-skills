@@ -110,7 +110,7 @@ test('every skill has portable, valid frontmatter', () => {
     .filter((entry) => statSync(resolve(skillsRoot, entry)).isDirectory())
     .sort();
 
-  assert.equal(skillNames.length, 10);
+  assert.equal(skillNames.length, 12);
   assert.ok(skillNames.includes('sekit-onboarding'));
 
   for (const skillName of skillNames) {
@@ -774,6 +774,124 @@ test('skills teach the SK-1075 acceptance record behind a feature check and neve
   ]) {
     assert.match(risks, pattern);
   }
+});
+
+test('manage-company-controls defines, dedupes, creates and links a company control (SK-1100)', () => {
+  const skill = readFileSync(resolve(skillsRoot, 'manage-company-controls/SKILL.md'), 'utf8');
+  for (const pattern of [
+    // Duplicate check before any create, archived rows included.
+    /`list_company_controls\(client_organization_id, include_archived: true\)`/,
+    /`search_control_catalog\(client_organization_id, q\)`/,
+    /keep the ones whose `framework_code` is the\s+client's framework/,
+    // The real create contract: only these fields exist.
+    /`create_company_control`[\s\S]{0,400}`name`[\s\S]{0,400}`implementation_status`[\s\S]{0,400}`owner_asset_id`[\s\S]{0,400}`perimeter_ids`/,
+    /a person asset of THIS client/,
+    /no perimeter means the whole company/,
+    /AT MOST ONE of `source_control_id`, `source_framework_control_id`\s+or `source_custom_control_id`/,
+    /the service never fills them from the source/,
+    // Ticket vocabulary with no field goes in the description, never a guessed parameter.
+    /\| Objective \|[^\n]*`description`/,
+    /\| Frequency \|[^\n]*`description`/,
+    /\| Related assets \|[^\n]*`create_asset_link` cannot target a company control/,
+    // Linking: exactly one target, idempotent, basis set by Sekit.
+    /`link_company_control\(client_organization_id,[\s\S]{0,300}EXACTLY ONE of `control_id`, `framework_control_id` or\s+`custom_control_id`/,
+    /returns `\{link, created\}`/,
+    /`created: false`/,
+    /basis[\s\S]{0,120}`suggestion`[\s\S]{0,120}`manual`/,
+    /`unlink_company_control`[\s\S]{0,200}returns `\{removed\}`/,
+    // Confirm by reading back; health never changes the status.
+    /`get_company_control\(client_organization_id, company_control_id\)`/,
+    /`health` never changes `implementation_status`/,
+    // Archive, never delete.
+    /`archive_company_control`[\s\S]{0,200}`restore_company_control`/,
+    /archive or restore only when the user\s+explicitly asks/,
+    /\*\*Agent updates\*\* in sekit-mcp-guide says which subjects are/,
+    /\*\*test-company-controls\*\*/,
+  ]) {
+    assert.match(skill, pattern);
+  }
+  assert.doesNotMatch(skill, /`(?:frequency|objective|scope|related_assets|asset_ids)`/, 'no guessed create_company_control field');
+});
+
+test('test-company-controls defines a test and records pass and fail with evidence (SK-1101)', () => {
+  const skill = readFileSync(resolve(skillsRoot, 'test-company-controls/SKILL.md'), 'utf8');
+  for (const pattern of [
+    /`create_company_control_test\(client_organization_id, company_control_id, name, procedure\)`/,
+    /`company_control_test_name_taken`/,
+    // Test definition lives in `procedure` because the tool has no other field.
+    /\| Pass criteria \|[^\n]*`procedure`/,
+    /\| Fail criteria \|[^\n]*`procedure`/,
+    /\| Expected evidence \|[^\n]*`procedure`/,
+    /\| Frequency \|[^\n]*`procedure`/,
+    // Recording contract.
+    /`record_company_control_test_result\(client_organization_id, company_control_id,\s+company_control_test_id, test_outcome, \.\.\.\)`/,
+    /\| `test_outcome` \| required: `pass` \(«Superada»\) or `fail` \(«Fallida»\)/,
+    /Retire a test only when the user explicitly asks/,
+    /note the test's\s+`result_count`; after a timeout or an unclear failure, read `get_company_control` first/,
+    /including a re-run after a fix on the same day/,
+    /`list_company_controls\(client_organization_id, include_archived: true\)`[\s\S]{0,200}`not_found`/,
+    /\*\*Agent updates\*\* in sekit-mcp-guide says which subjects are/,
+    /`client_file_id`[\s\S]{0,200}`artifact_id`[\s\S]{0,200}at most one/,
+    /otherwise[\s\S]{0,80}`body` is required/,
+    /`valid_until`[\s\S]{0,120}a pass only/,
+    /`collected_at`[\s\S]{0,300}more than 5 minutes in the future/,
+    /`external_run_id`[\s\S]{0,300}`created: false`[\s\S]{0,300}conflict/,
+    // Honesty: only an observed outcome is recorded.
+    /\*\*Record only an outcome you observed\.\*\*/,
+    /`latest_result` and `recent_outcomes` are ordered by `collected_at`/,
+    // Failure handling routes the follow-up, it never flips the control.
+    /A failed result does not change `implementation_status`/,
+    /a backfilled fail older than a pass does not/,
+    /\*\*analyze-risks\*\*/,
+    // Recurring runs: Sekit stores no schedule.
+    /Sekit stores no schedule/,
+    // Archive is «Descartar»; results are kept.
+    /`archive_company_control_test`[\s\S]{0,200}«Descartar»[\s\S]{0,200}results are kept/,
+    /\*\*manage-company-controls\*\*/,
+  ]) {
+    assert.match(skill, pattern);
+  }
+});
+
+test('the guide, READMEs and onboarding route company controls and their tests (SK-1100, SK-1101)', () => {
+  const guide = readFileSync(resolve(skillsRoot, 'sekit-mcp-guide/SKILL.md'), 'utf8');
+  const row = guide.match(/\n\| \*\*Company controls\*\* \|[^\n]*/);
+  assert.ok(row, 'the catalog must keep a Company controls row');
+  for (const name of [
+    'create_company_control',
+    'update_company_control',
+    'link_company_control',
+    'unlink_company_control',
+    'archive_company_control',
+    'restore_company_control',
+    'create_company_control_test',
+    'update_company_control_test',
+    'archive_company_control_test',
+    'restore_company_control_test',
+    'record_company_control_test_result',
+  ]) {
+    assert.match(row[0], new RegExp(`\`${name}\``), `Company controls row must name ${name}`);
+  }
+  assert.match(row[0], /\*\*manage-company-controls\*\*/);
+  assert.match(row[0], /\*\*test-company-controls\*\*/);
+  assert.match(guide, /\n\| [^\n]*\| \*\*manage-company-controls\*\* \|/);
+  assert.match(guide, /\n\| [^\n]*\| \*\*test-company-controls\*\* \|/);
+
+  for (const path of ['README.md', 'plugins/sekit-grc/README.md']) {
+    const readme = readFileSync(resolve(root, path), 'utf8');
+    assert.match(readme, /\| `manage-company-controls` \|/, `${path} must list manage-company-controls`);
+    assert.match(readme, /\| `test-company-controls` \|/, `${path} must list test-company-controls`);
+  }
+  const onboarding = readFileSync(resolve(skillsRoot, 'sekit-onboarding/SKILL.md'), 'utf8');
+  assert.match(onboarding, /`manage-company-controls`, `test-company-controls`/);
+
+  const evidence = readFileSync(resolve(skillsRoot, 'manage-evidence-and-documents/SKILL.md'), 'utf8');
+  assert.match(evidence, /\(`Risk` \| `ControlEvaluation` \| `CompanyControl`\)/);
+  assert.match(evidence, /A test's results are not evidence rows: \*\*test-company-controls\*\*/);
+  assert.match(evidence, /\| `note` \| `body` \| a written note; on a company control only \|/);
+  assert.match(evidence, /\| `inference` \|[^\n]*refused on a company control/);
+  assert.match(evidence, /`valid_until`\n?\s*\(`YYYY-MM-DD`, «Válida hasta», on a company control only/);
+  assert.doesNotMatch(evidence, /a bare date is rejected/);
 });
 
 test('the built Claude artifact is a valid, source-exact plugin archive', () => {

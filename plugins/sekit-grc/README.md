@@ -20,6 +20,8 @@ The plugin and connector intentionally have different names. `sekit-grc` is the 
 | `manage-evidence-and-documents` | Collect evidence and govern client documents and files |
 | `manage-assets` | Inventory people, vendors, data, systems, and devices and connect them to GRC work |
 | `sync-asset-inventory` | Mirror AWS, Vercel, or another source into a client's asset inventory and report what changed |
+| `manage-company-controls` | Define, create, and link a client's own company controls |
+| `test-company-controls` | Define control tests and record pass or fail results with evidence |
 
 Start with `/sekit-grc:sekit-onboarding` if you are new to Sekit. The onboarding skill routes
 into the smallest relevant workflow; `sekit-mcp-guide` holds the full operational reference.

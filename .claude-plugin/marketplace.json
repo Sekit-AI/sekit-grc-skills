@@ -9,7 +9,7 @@
     {
       "name": "sekit-grc",
       "source": "./plugins/sekit-grc",
-      "description": "Understand Sekit and do consultant GRC work over its authenticated MCP: onboard, analyze risks, evaluate controls, run gap analyses, manage knowledge and assets, collect evidence, and govern documents (policies, procedures, plans, records).",
+      "description": "Understand Sekit and do consultant GRC work over its authenticated MCP: onboard, analyze risks, evaluate controls, define and test company controls, run gap analyses, manage knowledge and assets, collect evidence, and govern documents (policies, procedures, plans, records).",
       "category": "productivity"
     }
   ]
