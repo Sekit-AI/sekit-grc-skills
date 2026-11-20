@@ -1,6 +1,6 @@
 ---
 name: manage-company-controls
-description: "Define, create and link a Sekit client's own company controls over the consultant MCP: what the company actually does to meet a requirement, with a name, how it is done, implementation status, a responsible person and the perimeters it covers. Draft the control from a requirement or a real practice, check the existing controls for a duplicate, create it, link it to the framework, Sekit or custom controls it covers, and confirm the result. Use when the user wants to register a control the client runs, turn a practice or policy into a control, link a company control to ISO 27001, NIST CSF or another framework, update or archive a company control, or asks which controls a client has. Not for a framework verdict inside a gap analysis (evaluate-controls) or for defining tests and recording results (test-company-controls). Read the sekit-mcp-guide skill first."
+description: "Define, create and link a Sekit client's own company controls over the consultant MCP: what the company actually does, with a name, a description of the practice, an objective and control types when known, implementation status, a responsible person and the perimeters it covers. Attach proof as evidence on the control. Draft from a requirement or a real practice, check for a duplicate, create it, link it to the framework, Sekit or custom controls it covers, and confirm the result. Use when the user wants to register a control the client runs, turn a practice or policy into a control, attach an NDA or other one-off proof, link a company control to ISO 27001, NIST CSF or another framework, update or archive a company control, or asks which controls a client has. Not for a framework verdict inside a gap analysis (evaluate-controls) or for a repeated check and its results (test-company-controls). Read the sekit-mcp-guide skill first."
 ---
 
 # Manage company controls
@@ -65,20 +65,24 @@ never send a guessed field.
 |---|---|
 | `client_organization_id` | required |
 | `name` | required. The practice in a short phrase («Copia de seguridad nocturna de la base de datos»), never a framework clause code |
-| `description` | «Cómo se hace»: how the practice runs, in enough detail that a test can check it |
+| `description` | «Descripción»: the company's own practice, what, who, with which tool and how often. Omit it until that practice is known. Never send the source requirement's text as `description`. Put no target date and no dated finding in `description`. A long procedure is a governed document attached as evidence |
+| `objective` | optional «Objetivo»: what the control is for, the risk it prevents or the result it secures. It stays when the tool or the process changes. Omit it when unknown; `null` on update clears it |
+| `control_types` | optional «Tipo»: any of `preventive` \| `detective` \| `corrective`, no duplicates. Omit it when unknown; `[]` on update clears the types. Sekit stores them in that order |
 | `implementation_status` | `not_implemented` (default) \| `in_progress` \| `implemented`. Set what the user confirmed, never what you hope |
 | `owner_asset_id` | the responsible person: a person asset of THIS client (from `list_assets`), or omit it |
 | `perimeter_ids` | perimeters it covers (`list_perimeters`, at most 50); no perimeter means the whole company |
-| `source_control_id` / `source_framework_control_id` / `source_custom_control_id` | optional, to copy a control: name AT MOST ONE of `source_control_id`, `source_framework_control_id` or `source_custom_control_id`, and send the `name` and `description` you copied, because the service never fills them from the source. The source is fixed at create, and a copy is linked to its source with basis `source` |
-| `tests` | optional `[{name, procedure}]` defined in the same write; the test standard is in **test-company-controls** |
+| `source_control_id` / `source_framework_control_id` / `source_custom_control_id` | optional, to copy a control: name AT MOST ONE of `source_control_id`, `source_framework_control_id` or `source_custom_control_id`. The source is fixed at create. Send `name`, `objective` and `description` yourself, because the service never fills them from the source. `name` = «<topic> · <facet>» for a Sekit CSF control, otherwise the source's name or title. objective = the CSF statement or the custom control's business language; none for a framework control. `description` stays empty until the company's practice is known. `control_types` stays empty on a copy. A copy is linked to its source with basis `source`, and tests never come along on a copy |
+| `tests` | optional, and only a check the company repeats. `tests`: `[{name, procedure, frequency?, pass_criteria?}]`. The test standard is in **test-company-controls**. One-off proof is not a test: a signed NDA or a signed contract is evidence, never a test |
 
 A requirement or a practice often carries more than these fields hold. Put it where it fits,
 and say so to the user:
 
 | Ticket or user wording | Where it goes |
 |---|---|
-| Objective | the first sentence of `description`: what the control prevents or ensures |
-| Frequency | `description` («cada noche a las 02:00»); a test's cadence goes in its `procedure` |
+| Objective | `objective` when known |
+| How often the practice runs | `description` («cada noche a las 02:00») |
+| A repeated check | a test, with its cadence in `frequency` (**test-company-controls**) |
+| A target date or a dated finding | not on the control. Planned dates live on risk actions (**analyze-risks**). The proof itself is evidence |
 | Scope | `perimeter_ids`; when the scope is narrower than any perimeter, also say it in `description` |
 | Owner | `owner_asset_id` when the person exists as an asset; otherwise name the role in `description` and suggest registering the person (**manage-assets**) |
 | Related assets | name them in `description`; `create_asset_link` cannot target a company control (it takes `Risk`, `ControlEvaluation` or `GapAnalysis`) |
@@ -112,7 +116,7 @@ yourself.
 ### 6. Confirm the result
 
 Read the control back with `get_company_control(client_organization_id, company_control_id)` and
-report it to the user in plain words: name, code, status, owner, perimeters, and each link. It
+report it to the user in plain words: name, code, status, objective, types, owner, perimeters, and each link. It
 also carries:
 
 - the crosswalk's suggestions, framework controls only, equivalent first, each with a relation
@@ -131,7 +135,8 @@ also carries:
 ### 7. Change, archive, restore
 
 - `update_company_control` changes a kept control. An omitted field is left as it is;
-  `description: null` and `owner_asset_id: null` clear them. `perimeter_ids` replaces the whole
+  `description: null`, `objective: null` and `owner_asset_id: null` clear them, and
+  `control_types: []` clears the types. `perimeter_ids` replaces the whole
   set (`[]` = the whole company); omit it to leave the perimeters untouched. The source cannot
   change. Restore an archived control before updating it.
 - `archive_company_control` soft-deletes a control and `restore_company_control` brings it back;
@@ -142,9 +147,10 @@ also carries:
 
 ## Documents that back a control
 
-A policy or record that shows the practice exists is attached with `create_evidence`
-(`evidenceable_type: "CompanyControl"`), see **manage-evidence-and-documents**. A test's results
-are not evidence rows; they are posted with **test-company-controls**.
+Proof that the practice exists (a signed NDA, a contract, a policy, a record) is attached with
+`create_evidence` (`evidenceable_type: "CompanyControl"`), see **manage-evidence-and-documents**.
+That proof is not a test. A test's results are not evidence rows; they are posted with
+**test-company-controls**, and only for a check the company repeats.
 
 ## Errors
 

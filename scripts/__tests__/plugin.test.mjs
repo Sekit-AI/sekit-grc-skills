@@ -783,15 +783,24 @@ test('manage-company-controls defines, dedupes, creates and links a company cont
     /`list_company_controls\(client_organization_id, include_archived: true\)`/,
     /`search_control_catalog\(client_organization_id, q\)`/,
     /keep the ones whose `framework_code` is the\s+client's framework/,
-    // The real create contract: only these fields exist.
-    /`create_company_control`[\s\S]{0,400}`name`[\s\S]{0,400}`implementation_status`[\s\S]{0,400}`owner_asset_id`[\s\S]{0,400}`perimeter_ids`/,
+    /`create_company_control`[\s\S]{0,500}`name`[\s\S]{0,1200}`implementation_status`[\s\S]{0,400}`owner_asset_id`[\s\S]{0,400}`perimeter_ids`/,
     /a person asset of THIS client/,
     /no perimeter means the whole company/,
     /AT MOST ONE of `source_control_id`, `source_framework_control_id`\s+or `source_custom_control_id`/,
     /the service never fills them from the source/,
-    // Ticket vocabulary with no field goes in the description, never a guessed parameter.
-    /\| Objective \|[^\n]*`description`/,
-    /\| Frequency \|[^\n]*`description`/,
+    /«Descripción»[\s\S]{0,240}what, who, with which tool and how often/,
+    /Never send the source requirement's text as `description`/,
+    /no target date and no dated finding in `description`/,
+    /`objective`[\s\S]{0,120}«Objetivo»/,
+    /`control_types`[\s\S]{0,160}`preventive`[\s\S]{0,40}`detective`[\s\S]{0,40}`corrective`/,
+    /no duplicates/,
+    /objective = the CSF statement or the custom control's business language; none for a framework control/,
+    /`control_types` stays empty on a copy/,
+    /tests never come along on a copy/,
+    /`tests`: `\[\{name, procedure, frequency\?, pass_criteria\?\}\]`/,
+    /only a check the company repeats/,
+    /a signed NDA or a signed contract is evidence, never a test/,
+    /`create_evidence`[\s\S]{0,160}evidenceable_type: "CompanyControl"/,
     /\| Related assets \|[^\n]*`create_asset_link` cannot target a company control/,
     // Linking: exactly one target, idempotent, basis set by Sekit.
     /`link_company_control\(client_organization_id,[\s\S]{0,300}EXACTLY ONE of `control_id`, `framework_control_id` or\s+`custom_control_id`/,
@@ -810,19 +819,27 @@ test('manage-company-controls defines, dedupes, creates and links a company cont
   ]) {
     assert.match(skill, pattern);
   }
-  assert.doesNotMatch(skill, /`(?:frequency|objective|scope|related_assets|asset_ids)`/, 'no guessed create_company_control field');
+  assert.doesNotMatch(
+    skill,
+    /`(?:scope|related_assets|asset_ids|target_date|expected_evidence|fail_criteria)`/,
+    'no guessed company-control field',
+  );
 });
 
 test('test-company-controls defines a test and records pass and fail with evidence (SK-1101)', () => {
   const skill = readFileSync(resolve(skillsRoot, 'test-company-controls/SKILL.md'), 'utf8');
   for (const pattern of [
-    /`create_company_control_test\(client_organization_id, company_control_id, name, procedure\)`/,
+    /`create_company_control_test\(client_organization_id, company_control_id, name, procedure, frequency\?, pass_criteria\?\)`/,
     /`company_control_test_name_taken`/,
-    // Test definition lives in `procedure` because the tool has no other field.
-    /\| Pass criteria \|[^\n]*`procedure`/,
-    /\| Fail criteria \|[^\n]*`procedure`/,
-    /\| Expected evidence \|[^\n]*`procedure`/,
-    /\| Frequency \|[^\n]*`procedure`/,
+    /A test exists only for a check the company repeats/,
+    /a signed NDA or a signed contract is not a test/,
+    /\| How \|[^\n]*`procedure`/,
+    /\| Frequency \|[^\n]*`daily`[^\n]*`weekly`[^\n]*`monthly`[^\n]*`quarterly`[^\n]*`semiannual`[^\n]*`annual`[^\n]*`on_demand`/,
+    /\| Pass criteria \|[^\n]*`pass_criteria`/,
+    /There is no fail-criteria field/,
+    /`null` clears `frequency` or `pass_criteria`/,
+    /`health` reads neither/,
+    /A materially different check is a new test/,
     // Recording contract.
     /`record_company_control_test_result\(client_organization_id, company_control_id,\s+company_control_test_id, test_outcome, \.\.\.\)`/,
     /\| `test_outcome` \| required: `pass` \(«Superada»\) or `fail` \(«Fallida»\)/,
@@ -843,8 +860,7 @@ test('test-company-controls defines a test and records pass and fail with eviden
     /A failed result does not change `implementation_status`/,
     /a backfilled fail older than a pass does not/,
     /\*\*analyze-risks\*\*/,
-    // Recurring runs: Sekit stores no schedule.
-    /Sekit stores no schedule/,
+    /Sekit does not schedule or remind from `frequency`/,
     // Archive is «Descartar»; results are kept.
     /`archive_company_control_test`[\s\S]{0,200}«Descartar»[\s\S]{0,200}results are kept/,
     /\*\*manage-company-controls\*\*/,

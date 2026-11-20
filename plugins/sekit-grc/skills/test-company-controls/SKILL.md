@@ -1,6 +1,6 @@
 ---
 name: test-company-controls
-description: "Define tests for a Sekit client's company controls and record their results with evidence over the consultant MCP. Write what each test checks, how, how often, the pass and fail criteria and the evidence expected, create it on the control, run or collect the check, and record a pass or a fail with a note, an uploaded file or a governed document, a timestamp and an optional validity date. Handle failures and recurring or bot-driven runs without duplicates. Use when the user wants to test a control, add a check such as a nightly backup check, record that a control passed or failed, post the result of a scheduled run, see a control's latest results or health, or retire a test. Not for creating or linking the control itself (manage-company-controls) or for framework verdicts in a gap analysis (evaluate-controls). Read the sekit-mcp-guide skill first."
+description: "Define tests for a Sekit client's company controls and record their results with evidence over the consultant MCP. A test is only a check the company repeats: write the steps, the frequency and the pass criterion, create it on the control, run or collect the check, and record a pass or a fail with a note, an uploaded file or a governed document, a timestamp and an optional validity date. Handle failures and recurring or bot-driven runs without duplicates. Use when the user wants to test a control, add a repeated check such as a nightly backup check, record that a control passed or failed, post the result of a scheduled run, see a control's latest results or health, or retire a test. Not for one-off proof such as a signed NDA or a contract (manage-company-controls attaches that as evidence), for creating or linking the control itself, or for framework verdicts in a gap analysis (evaluate-controls). Read the sekit-mcp-guide skill first."
 ---
 
 # Test company controls
@@ -23,34 +23,39 @@ checks the same thing instead of defining a second one.
 
 ### 2. Define the test
 
-The tool takes only a `name` and a `procedure` («Cómo se prueba»). Everything a reviewer needs to
-repeat the check goes in the `procedure`, in this order:
+A test exists only for a check the company repeats. Proof collected once is evidence on the
+control, not a test: a signed NDA or a signed contract is not a test. Attach that with
+**manage-company-controls**.
+
+`create_company_control_test(client_organization_id, company_control_id, name, procedure, frequency?, pass_criteria?)`
+takes the steps in `procedure` and the cadence and the pass rule in their own fields:
 
 | Part | Where it goes |
 |---|---|
-| What is checked | `name` (short: «Backup nocturno completado») and the first line of `procedure` |
-| How | `procedure`: the steps or the query/command, and where to look |
-| Frequency | `procedure` («cada día tras la ventana de 02:00»); Sekit stores no schedule |
-| Pass criteria | `procedure`: the observable condition that makes it a pass |
-| Fail criteria | `procedure`: what makes it a fail, including «no evidence found» |
-| Expected evidence | `procedure`: what is attached on each run (a log excerpt, a screenshot, a report) |
+| What is checked | `name` (short: «Backup nocturno completado») |
+| How | `procedure` («Cómo se prueba»): the steps, the query or command, and where to look. Not the cadence and not the pass rule |
+| Frequency | `frequency`: `daily` \| `weekly` \| `monthly` \| `quarterly` \| `semiannual` \| `annual` \| `on_demand`. Omit it when unknown. It is shown only: Sekit does not schedule or remind from `frequency`, and `health` reads neither `frequency` nor `pass_criteria`. An unknown value is refused |
+| Pass criteria | `pass_criteria` («Se supera si»): the binary rule fixed before the run, the threshold and what to attach. Omit it when unknown. An unchecked run is not recorded (step 3). Do not put that instruction in `pass_criteria` |
+| A fail | the pass rule not met. There is no fail-criteria field. Record a fail in step 4 when you observe it |
 
-Example `procedure` for a nightly database backup:
+Example for a nightly database backup:
 
-> Comprueba que el job de backup de la base de datos de producción terminó la última noche.
-> Cómo: consulta el historial del job en la consola del proveedor. Frecuencia: diaria, tras las
-> 02:00. Superada: hay un backup completado en las últimas 24 h y su tamaño no es cero. Fallida:
-> no hay backup en 24 h, el job terminó con error o el tamaño es cero. Evidencia: extracto del
-> historial con fecha, estado y tamaño.
+> `name`: Backup nocturno completado
+> `procedure`: Consulta el historial del job de backup de la base de datos de producción en la
+> consola del proveedor y lee la última ejecución.
+> `frequency`: `daily`
+> `pass_criteria`: Hay un backup completado en las últimas 24 h y su tamaño no es cero. Adjunta
+> el extracto del historial con fecha, estado y tamaño.
 
-Show the draft to the user and create it after they agree:
-`create_company_control_test(client_organization_id, company_control_id, name, procedure)`. A
-live test name is unique per control; a clash returns `company_control_test_name_taken`. Tests
-can also be defined in the same write as the control (`tests: [{name, procedure}]` on
-`create_company_control`).
+Show the draft to the user and create it after they agree. A
+live test name is unique per control; a clash returns `company_control_test_name_taken`. The
+same fields can be sent in the same write as the control (`tests: [{name, procedure, frequency?, pass_criteria?}]`
+on `create_company_control`), still only for a repeated check.
 
-`update_company_control_test` edits the `name` and/or `procedure` in place; the console's
-Registro keeps the old wording.
+`update_company_control_test` edits `name`, `procedure`, `frequency` or `pass_criteria` in place.
+An omitted field is left as it is; `null` clears `frequency` or `pass_criteria` (a blank
+`pass_criteria` is no criterion). Registro keeps the old wording. A materially different check
+is a new test: archive the old one.
 
 ### 3. Run or collect the check
 
@@ -91,14 +96,15 @@ Then ask the user for the follow-up and route it:
 - a weakness that could cause harm → a risk or a remediation action, see **analyze-risks**;
 - a broken practice that is being fixed → `update_company_control(..., implementation_status:
   "in_progress")` only when the user says so (**manage-company-controls**);
-- a wrong test → fix the `procedure` with `update_company_control_test`.
+- a wrong test → fix the steps, `frequency` or `pass_criteria` with `update_company_control_test`.
+  A materially different check is a new test.
 
 When the fix lands, run the test again and record a new pass. Never rewrite or remove the failed
 result; the history is the proof.
 
 ### 6. Recurring and bot-driven runs
 
-Sekit stores no schedule: the cadence lives in the `procedure`, and the expiry of each pass
+Sekit does not schedule or remind from `frequency`. The expiry of each pass
 (`valid_until`) is what makes a missed run visible.
 
 A scheduled job or bot sends `external_run_id` with every post, for example
