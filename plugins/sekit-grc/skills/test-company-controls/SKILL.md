@@ -35,7 +35,7 @@ takes the steps in `procedure` and the cadence and the pass rule in their own fi
 | What is checked | `name` (short: «Backup nocturno completado») |
 | How | `procedure` («Cómo se prueba»): the steps, the query or command, and where to look. Not the cadence and not the pass rule |
 | Frequency | `frequency`: `daily` \| `weekly` \| `monthly` \| `quarterly` \| `semiannual` \| `annual` \| `on_demand`. Omit it when unknown. It is shown only: Sekit does not schedule or remind from `frequency`, and `health` reads neither `frequency` nor `pass_criteria`. An unknown value is refused |
-| Pass criteria | `pass_criteria` («Se supera si»): the binary rule fixed before the run, including the threshold, what to attach, and that an unchecked run is not recorded. Omit it when unknown |
+| Pass criteria | `pass_criteria` («Se supera si»): the binary rule fixed before the run, the threshold and what to attach. Omit it when unknown. An unchecked run is not recorded (step 3). Do not put that instruction in `pass_criteria` |
 | A fail | the pass rule not met. There is no fail-criteria field. Record a fail in step 4 when you observe it |
 
 Example for a nightly database backup:
@@ -44,9 +44,8 @@ Example for a nightly database backup:
 > `procedure`: Consulta el historial del job de backup de la base de datos de producción en la
 > consola del proveedor y lee la última ejecución.
 > `frequency`: `daily`
-> `pass_criteria`: Hay un backup completado en las últimas 24 h y su tamaño no es cero. Si no se
-> puede comprobar, no registres resultado. Adjunta el extracto del historial con fecha, estado y
-> tamaño.
+> `pass_criteria`: Hay un backup completado en las últimas 24 h y su tamaño no es cero. Adjunta
+> el extracto del historial con fecha, estado y tamaño.
 
 Show the draft to the user and create it after they agree. A
 live test name is unique per control; a clash returns `company_control_test_name_taken`. The
